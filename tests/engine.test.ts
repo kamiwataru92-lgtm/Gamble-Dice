@@ -67,12 +67,12 @@ describe('startGame', () => {
 })
 
 describe('rolling', () => {
-  it('uses the game\'s odds: 3/6 pays +100%', () => {
+  it('uses the game\'s odds: 3/6 pays +200%', () => {
     const s = applyAction(playing(), roll('a', 50), WIN, NOW)
-    expect(s.players.a.credits).toBe(150)
+    expect(s.players.a.credits).toBe(200)
     expect(current(s)).toBe('a')
     expect(s.currentStreak).toBe(1)
-    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, face: 6, win: true, delta: 50 })
+    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, face: 6, win: true, delta: 100 })
   })
   it('uses the game\'s odds: face 3 loses at 3/6 but wins at 2/6', () => {
     expect(applyAction(playing({}, undefined, 3), roll('a'), face(3), NOW).lastRoll?.win).toBe(false)
@@ -104,7 +104,7 @@ describe('rolling', () => {
     for (let i = 0; i < 3; i++) s = applyAction(s, roll('a', 20), WIN, NOW)
     expect(s.status).toBe('finished')
     expect(s.result).toEqual({ reason: 'streak', winnerUid: 'a', payouts: { a: 200, b: 0, c: 0 } })
-    expect(s.players.a.credits).toBe(100 + 20 + 20 + 20 + 200)
+    expect(s.players.a.credits).toBe(100 + 40 + 40 + 40 + 200)
   })
   it('resets the streak when the player passes', () => {
     let s = applyAction(playing(), roll('a'), WIN, NOW)
@@ -144,7 +144,7 @@ describe('passing', () => {
     let s = applyAction(playing(), roll('a', 90), LOSE, NOW) // a eliminated, pool 100
     for (let i = 0; i < 3; i++) s = applyAction(s, roll('b', 20), WIN, NOW)
     expect(s.result).toEqual({ reason: 'streak', winnerUid: 'b', payouts: { a: 0, b: 100, c: 0 } })
-    expect(s.players.b.credits).toBe(100 + 60 + 100)
+    expect(s.players.b.credits).toBe(100 + 120 + 100)
   })
   it('resets the pass count when someone rolls', () => {
     let s = applyAction(playing(), pass('a'), WIN, NOW)
@@ -195,10 +195,10 @@ describe('invalid actions', () => {
     const rich = playing()
     rich.players.a.credits = 500
     expectError(() => applyAction(rich, roll('a', 101), WIN, NOW), 'invalid_bet')
-    expect(applyAction(rich, roll('a', 100), WIN, NOW).players.a.credits).toBe(600)
+    expect(applyAction(rich, roll('a', 100), WIN, NOW).players.a.credits).toBe(700)
   })
   it('accepts the minimum bet of 20', () => {
-    expect(applyAction(playing(), roll('a', 20), WIN, NOW).players.a.credits).toBe(120)
+    expect(applyAction(playing(), roll('a', 20), WIN, NOW).players.a.credits).toBe(140)
   })
   it('rejects actions after the game finished', () => {
     expectError(() => applyAction(playing({ status: 'finished' }), roll('a'), WIN, NOW), 'not_playing')
@@ -214,6 +214,6 @@ describe('invalid actions', () => {
 describe('games saved by the previous version', () => {
   it('play at 3/6 when no odds were picked', () => {
     const s = applyAction(playing({ loseFaces: null }), roll('a', 50), WIN, NOW)
-    expect(s.players.a.credits).toBe(150)
+    expect(s.players.a.credits).toBe(200)
   })
 })
