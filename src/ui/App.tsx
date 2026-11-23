@@ -74,7 +74,7 @@ export function App() {
   }
   if (!user) return <Login />
 
-  const me = { uid: user.uid, displayName: user.displayName ?? 'プレイヤー', icon: profile?.icon ?? null }
+  const me = { uid: user.uid, displayName: profile?.displayName ?? user.displayName ?? 'プレイヤー', icon: profile?.icon ?? null }
   let body
   if (!code) {
     body = (
