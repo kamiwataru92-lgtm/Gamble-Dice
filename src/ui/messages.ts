@@ -23,6 +23,11 @@ const MESSAGES: Record<string, string> = {
   invalid_amount: '数は 1 以上の整数で入力してください',
   negative_coins: 'コインが 0 未満になるので減らせません',
   unknown_item: 'そのアイテムはありません',
+  invalid_handle: 'フレンドID は半角の英小文字・数字・_ で 3〜16 文字にしてください',
+  handle_taken: 'そのフレンドID はほかの人が使っています',
+  self_request: '自分には申請できません',
+  already_friends: 'すでにフレンドです',
+  request_gone: 'その申請はもうありません',
   code_collision: '部屋コードを作れませんでした。もう一度お試しください',
 }
 

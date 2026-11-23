@@ -18,6 +18,10 @@ export interface UserDoc {
   items?: Record<string, number>
   /** Equipped gacha item id. */
   icon?: string | null
+  /** Friend search ID (unique, see handles/{handle}). */
+  handle?: string | null
+  /** Friends' uids (kept mutual). */
+  friends?: string[]
 }
 
 export const userRef = (uid: string) => doc(db, 'users', uid)
