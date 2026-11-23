@@ -5,10 +5,10 @@ export const LOSE_FACE_OPTIONS: LoseFaces[] = [2, 3, 4]
 
 /**
  * Credit bonus on a win, in percent of the bet. A lost bet goes to the pool and usually comes back to some
- * player, so counting the pool, one roll returns 100% + (win chance) × bonus = 150% across all players.
+ * player, so counting the pool, one roll returns 100% + (win chance) × bonus = 200% across all players.
  * (Bets lost by eliminated players vanish when a game ends without a streak winner.)
  */
-export const RATE_PERCENT: Record<LoseFaces, number> = { 2: 75, 3: 100, 4: 150 }
+export const RATE_PERCENT: Record<LoseFaces, number> = { 2: 150, 3: 200, 4: 300 }
 
 export const MIN_BET = 20
 /** Caps a single bet so winnings can't be re-bet to grow exponentially. */
