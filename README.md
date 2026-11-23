@@ -45,18 +45,9 @@
 3. **Firestore Database** → 「データベースの作成」→ 本番モードで作成（場所は `asia-northeast1` など近いところ）
 4. **プロジェクトの設定**（歯車）→「マイアプリ」でウェブアプリ（`</>`）を追加し、表示される設定値を控える
 
-### 2. 設定値を書く
+### 2. 設定値
 
-`.env.example` をコピーして `.env.local` を作り、控えた値を書きます。
-
-```
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_APP_ID=...
-```
-
-`.firebaserc.example` をコピーして `.firebaserc` を作り、プロジェクト ID を書きます。
+Firebase の設定値は `.env` に、プロジェクト ID は `.firebaserc` に書いてあります（公開前提の値なのでリポジトリに含めています）。別のプロジェクトで使うときはこの 2 つを書き換えます。
 
 ### 3. 公開する
 
@@ -76,7 +67,7 @@ firebase deploy --only hosting,firestore:rules
 
 ```bash
 npm test        # ルールとゲーム進行のテスト
-npm run dev     # .env.local の Firebase に接続して起動
+npm run dev     # .env の Firebase に接続して起動
 ```
 
 本物の Firebase を使わずに試すときは、エミュレーターを使います（Java と `npm install -g firebase-tools` が必要）。ログイン画面に「テストユーザーでログイン」が出るので、2 つのブラウザで別の名前を入れれば 1 台で対戦を試せます。
