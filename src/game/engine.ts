@@ -1,5 +1,5 @@
-import { MIN_PLAYERS, PASS_ROUNDS_TO_END, TURN_SECONDS } from './config'
-import { forfeitAmount, isWin, splitPool, winAmount } from './rules'
+import { LOSE_FACE_OPTIONS, MIN_BET, MIN_PLAYERS, PASS_ROUNDS_TO_END, TURN_SECONDS } from './config'
+import { isWin, splitPool, winAmount } from './rules'
 import type { Action, GameState } from './types'
 
 export class GameError extends Error {
@@ -16,6 +16,7 @@ export function startGame(state: GameState, rng: () => number, now: number): Gam
   if (state.status !== 'waiting') throw new GameError('already_started')
   const uids = Object.keys(state.players)
   if (uids.length < MIN_PLAYERS) throw new GameError('not_enough_players')
+  const loseFaces = LOSE_FACE_OPTIONS[Math.min(LOSE_FACE_OPTIONS.length - 1, Math.floor(rng() * LOSE_FACE_OPTIONS.length))]
   for (let i = uids.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
     ;[uids[i], uids[j]] = [uids[j], uids[i]]
@@ -23,6 +24,7 @@ export function startGame(state: GameState, rng: () => number, now: number): Gam
   return {
     ...clone(state),
     status: 'playing',
+    loseFaces,
     turnOrder: uids,
     currentTurnIndex: 0,
     currentStreak: 0,
@@ -45,16 +47,17 @@ export function applyAction(state: GameState, action: Action, rng: () => number,
   if (action.type === 'pass') return pass(s, now)
 
   const p = s.players[uid]
-  const { bet, loseFaces } = action
-  if (!Number.isInteger(bet) || bet < 1 || bet > p.credits) throw new GameError('invalid_bet')
-  if (!Number.isInteger(loseFaces) || loseFaces < 1 || loseFaces > 5) throw new GameError('invalid_faces')
+  const { bet } = action
+  // Games started before odds were picked per game have no loseFaces: treat them as 3/6.
+  const loseFaces = s.loseFaces ?? 3
+  if (!Number.isInteger(bet) || bet < MIN_BET || bet > p.credits) throw new GameError('invalid_bet')
 
   const face = Math.floor(rng() * 6) + 1
   s.consecutivePasses = 0
   if (isWin(face, loseFaces)) {
     const delta = winAmount(bet, loseFaces)
     p.credits += delta
-    s.lastRoll = { uid, bet, loseFaces, face, win: true, delta }
+    s.lastRoll = { uid, bet, face, win: true, delta }
     s.currentStreak += 1
     s.rolledThisTurn = true
     s.turnDeadline = deadline(now)
@@ -68,12 +71,12 @@ export function applyAction(state: GameState, action: Action, rng: () => number,
     return s
   }
 
-  const lost = Math.min(p.credits, forfeitAmount(s.settings.forfeitMode, bet, p.credits))
-  p.credits -= lost
-  p.forfeitedTotal += lost
-  s.pool += lost
-  if (p.credits === 0) p.eliminated = true
-  s.lastRoll = { uid, bet, loseFaces, face, win: false, delta: -lost }
+  p.credits -= bet
+  p.forfeitedTotal += bet
+  s.pool += bet
+  // Can no longer place the minimum bet: out of this game (what is left is cashed out at the end).
+  if (p.credits < MIN_BET) p.eliminated = true
+  s.lastRoll = { uid, bet, face, win: false, delta: -bet }
   return endTurn(s, now)
 }
 

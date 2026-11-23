@@ -1,6 +1,6 @@
 import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore'
 import { applyAction, GameError, startGame } from '../game/engine'
-import { addPlayer, createState, removePlayer, settlePlayer } from '../game/lobby'
+import { addPlayer, createState, nextRound, removePlayer, settlePlayer } from '../game/lobby'
 import { generateRoomCode } from '../game/roomCode'
 import type { Action, GameSettings, GameState } from '../game/types'
 import { db } from './app'
@@ -45,18 +45,6 @@ export async function joinRoom(code: string, user: User, buyIn: number): Promise
   })
 }
 
-/** A non-host leaves before the game starts: buy-in refunded in the same transaction. */
-export async function leaveRoom(code: string, uid: string): Promise<void> {
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(roomRef(code))
-    const coins = await coinsOf(tx, uid)
-    if (!snap.exists()) throw new GameError('not_found')
-    const { state, refund } = removePlayer(snap.data() as GameState, uid)
-    tx.set(roomRef(code), state)
-    tx.update(userRef(uid), { coins: coins + refund, openRooms: arrayRemove(code) })
-  })
-}
-
 async function update(code: string, fn: (s: GameState) => GameState): Promise<void> {
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(roomRef(code))
@@ -65,20 +53,17 @@ async function update(code: string, fn: (s: GameState) => GameState): Promise<vo
   })
 }
 
+/** Any player who has bought in can start the game. */
 export function startRoom(code: string, uid: string): Promise<void> {
   return update(code, (s) => {
-    if (s.hostUid !== uid) throw new GameError('not_host')
+    if (!s.players[uid]) throw new GameError('not_in_room')
     return startGame(s, Math.random, Date.now())
   })
 }
 
-/** Host cancels before start: the room finishes with no result and everyone cashes out their buy-in. */
-export function cancelRoom(code: string, uid: string): Promise<void> {
-  return update(code, (s) => {
-    if (s.hostUid !== uid) throw new GameError('not_host')
-    if (s.status !== 'waiting') throw new GameError('already_started')
-    return { ...s, status: 'finished' }
-  })
+/** After a game ends, reopen the same room for the next game (anyone who played can do it). */
+export function nextGame(code: string): Promise<void> {
+  return update(code, (s) => (s.status === 'waiting' ? s : nextRound(s)))
 }
 
 export function act(code: string, action: Action): Promise<void> {
@@ -89,7 +74,7 @@ export function watchRoom(code: string, cb: (s: GameState | null) => void): () =
   return onSnapshot(roomRef(code), (snap) => cb(snap.exists() ? (snap.data() as GameState) : null))
 }
 
-/** Cash out this player's final credits into their wallet exactly once. */
+/** Cash out whatever this player is owed by the room (final credits, carried-over credits) exactly once. */
 export async function settle(code: string, uid: string): Promise<void> {
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(roomRef(code))
@@ -98,27 +83,54 @@ export async function settle(code: string, uid: string): Promise<void> {
       tx.update(userRef(uid), { openRooms: arrayRemove(code) })
       return
     }
-    const result = settlePlayer(snap.data() as GameState, uid)
+    const room = snap.data() as GameState
+    const result = settlePlayer(room, uid)
+    if (result.state === room) return // nothing owed: no writes
     tx.set(roomRef(code), result.state)
-    tx.update(userRef(uid), { coins: coins + result.coins, openRooms: arrayRemove(code) })
+    tx.update(userRef(uid), { coins: coins + result.coins })
   })
 }
 
-/** Settle every finished room this user still has open (e.g. they were offline when it ended). */
-export async function settlePending(uid: string): Promise<void> {
-  const user = await getDoc(userRef(uid))
-  for (const code of (user.data() as UserDoc | undefined)?.openRooms ?? []) {
-    const room = await getDoc(roomRef(code))
-    if (!room.exists() || (room.data() as GameState).status === 'finished') await settle(code, uid)
-  }
+/**
+ * Leave the room for good: refund the buy-in if the next game has not started, cash out anything owed,
+ * and stop tracking the room. Not allowed while you are playing in a game.
+ */
+export async function exitRoom(code: string, uid: string): Promise<void> {
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(roomRef(code))
+    const coins = await coinsOf(tx, uid)
+    if (!snap.exists()) {
+      tx.update(userRef(uid), { openRooms: arrayRemove(code) })
+      return
+    }
+    const room = snap.data() as GameState
+    if (room.status === 'playing' && room.players[uid]) throw new GameError('already_started')
+    let state = room
+    let gained = 0
+    if (room.status === 'waiting' && room.players[uid]) {
+      const left = removePlayer(state, uid)
+      state = left.state
+      gained += left.refund
+    }
+    const paid = settlePlayer(state, uid)
+    state = paid.state
+    gained += paid.coins
+    if (state !== room) tx.set(roomRef(code), state)
+    tx.update(userRef(uid), { coins: coins + gained, openRooms: arrayRemove(code) })
+  })
 }
 
-/** Rooms this user is in that are not finished yet, to rejoin after a reload. */
+/** Cash out every room this user is owed something by (e.g. they were offline when a game ended). */
+export async function settlePending(uid: string): Promise<void> {
+  const user = await getDoc(userRef(uid))
+  for (const code of (user.data() as UserDoc | undefined)?.openRooms ?? []) await settle(code, uid)
+}
+
+/** The room this user is in, to go back to it after a reload. */
 export async function activeRoom(uid: string): Promise<string | null> {
   const user = await getDoc(userRef(uid))
   for (const code of (user.data() as UserDoc | undefined)?.openRooms ?? []) {
-    const room = await getDoc(roomRef(code))
-    if (room.exists() && (room.data() as GameState).status !== 'finished') return code
+    if ((await getDoc(roomRef(code))).exists()) return code
   }
   return null
 }

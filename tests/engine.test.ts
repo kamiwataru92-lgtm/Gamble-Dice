@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { applyAction, GameError, startGame } from '../src/game/engine'
-import type { GameState, PlayerState } from '../src/game/types'
+import type { GameState, LoseFaces, PlayerState } from '../src/game/types'
 
 const NOW = 1_000_000
 /** rng that makes the next die show `face` (1..6). */
@@ -12,11 +12,12 @@ function player(uid: string, credits = 100): PlayerState {
   return { uid, displayName: uid, icon: null, credits, buyIn: credits, forfeitedTotal: 0, eliminated: false, settled: false }
 }
 
-function playing(overrides: Partial<GameState> = {}, uids = ['a', 'b', 'c']): GameState {
+function playing(overrides: Partial<GameState> = {}, uids = ['a', 'b', 'c'], loseFaces: LoseFaces = 3): GameState {
   return {
     status: 'playing',
-    hostUid: uids[0],
-    settings: { forfeitMode: 'bet', streakToWin: 3 },
+    round: 1,
+    settings: { streakToWin: 3 },
+    loseFaces,
     players: Object.fromEntries(uids.map((u) => [u, player(u)])),
     turnOrder: uids,
     currentTurnIndex: 0,
@@ -27,12 +28,12 @@ function playing(overrides: Partial<GameState> = {}, uids = ['a', 'b', 'c']): Ga
     turnDeadline: NOW + 60_000,
     lastRoll: null,
     result: null,
+    unsettled: {},
     ...overrides,
   }
 }
 
-const roll = (uid: string, bet = 10, loseFaces: 1 | 2 | 3 | 4 | 5 = 1) =>
-  ({ type: 'roll', uid, bet, loseFaces }) as const
+const roll = (uid: string, bet = 20) => ({ type: 'roll', uid, bet }) as const
 const pass = (uid: string) => ({ type: 'pass', uid }) as const
 const current = (s: GameState) => s.turnOrder[s.currentTurnIndex]
 
@@ -48,13 +49,17 @@ function expectError(fn: () => unknown, code: string) {
 }
 
 describe('startGame', () => {
+  const waiting = () => playing({ status: 'waiting', turnOrder: [], loseFaces: null })
   it('orders every player and starts playing', () => {
-    const waiting = playing({ status: 'waiting', turnOrder: [] })
-    const s = startGame(waiting, Math.random, NOW)
+    const s = startGame(waiting(), Math.random, NOW)
     expect(s.status).toBe('playing')
     expect([...s.turnOrder].sort()).toEqual(['a', 'b', 'c'])
-    expect(s.currentTurnIndex).toBe(0)
     expect(s.turnDeadline).toBe(NOW + 60_000)
+  })
+  it('picks the losing odds for the whole game from 2/6, 3/6 or 4/6', () => {
+    expect(startGame(waiting(), () => 0, NOW).loseFaces).toBe(2)
+    expect(startGame(waiting(), () => 0.5, NOW).loseFaces).toBe(3)
+    expect(startGame(waiting(), () => 0.99, NOW).loseFaces).toBe(4)
   })
   it('rejects fewer than 2 players', () => {
     expectError(() => startGame(playing({ status: 'waiting' }, ['a']), Math.random, NOW), 'not_enough_players')
@@ -62,36 +67,32 @@ describe('startGame', () => {
 })
 
 describe('rolling', () => {
-  it('adds the win amount and keeps the turn on a win', () => {
-    const s = applyAction(playing(), roll('a', 50, 5), WIN, NOW)
-    expect(s.players.a.credits).toBe(145)
+  it('uses the game\'s odds: 3/6 pays +120%', () => {
+    const s = applyAction(playing(), roll('a', 50), WIN, NOW)
+    expect(s.players.a.credits).toBe(160)
     expect(current(s)).toBe('a')
     expect(s.currentStreak).toBe(1)
-    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, loseFaces: 5, face: 6, win: true, delta: 45 })
+    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, face: 6, win: true, delta: 60 })
+  })
+  it('uses the game\'s odds: face 3 loses at 3/6 but wins at 2/6', () => {
+    expect(applyAction(playing({}, undefined, 3), roll('a'), face(3), NOW).lastRoll?.win).toBe(false)
+    expect(applyAction(playing({}, undefined, 2), roll('a'), face(3), NOW).lastRoll?.win).toBe(true)
   })
   it('restarts the turn timer after a win', () => {
     const s = applyAction(playing(), roll('a'), WIN, NOW + 50_000)
     expect(s.turnDeadline).toBe(NOW + 50_000 + 60_000)
   })
-  it('moves the bet to the pool and ends the turn on a loss in bet mode', () => {
+  it('moves the bet to the pool and ends the turn on a loss', () => {
     const s = applyAction(playing(), roll('a', 30), LOSE, NOW)
     expect(s.players.a.credits).toBe(70)
     expect(s.players.a.forfeitedTotal).toBe(30)
     expect(s.pool).toBe(30)
     expect(current(s)).toBe('b')
     expect(s.currentStreak).toBe(0)
-    expect(s.turnDeadline).toBe(NOW + 60_000)
   })
-  it('takes half the credits on a loss in half mode', () => {
-    const s = applyAction(playing({ settings: { forfeitMode: 'half', streakToWin: 3 } }), roll('a', 1), LOSE, NOW)
-    expect(s.players.a.credits).toBe(50)
-    expect(s.pool).toBe(50)
-  })
-  it('eliminates a player who hits 0 in half mode and skips them afterwards', () => {
-    const base = playing({ settings: { forfeitMode: 'half', streakToWin: 3 } })
-    base.players.a.credits = 1
-    let s = applyAction(base, roll('a', 1), LOSE, NOW)
-    expect(s.players.a.credits).toBe(0)
+  it('eliminates a player left with less than the minimum bet and skips them', () => {
+    let s = applyAction(playing(), roll('a', 85), LOSE, NOW)
+    expect(s.players.a.credits).toBe(15)
     expect(s.players.a.eliminated).toBe(true)
     s = applyAction(s, roll('b'), LOSE, NOW)
     s = applyAction(s, roll('c'), LOSE, NOW)
@@ -99,13 +100,10 @@ describe('rolling', () => {
   })
   it('wins the whole pool after the required streak and ends the game', () => {
     let s = playing({ pool: 200 })
-    s = applyAction(s, roll('a', 10), WIN, NOW)
-    s = applyAction(s, roll('a', 10), WIN, NOW)
-    expect(s.status).toBe('playing')
-    s = applyAction(s, roll('a', 10), WIN, NOW)
+    for (let i = 0; i < 3; i++) s = applyAction(s, roll('a', 20), WIN, NOW)
     expect(s.status).toBe('finished')
     expect(s.result).toEqual({ reason: 'streak', winnerUid: 'a', payouts: { a: 200, b: 0, c: 0 } })
-    expect(s.players.a.credits).toBe(303)
+    expect(s.players.a.credits).toBe(100 + 24 + 24 + 24 + 200)
   })
   it('resets the streak when the player passes', () => {
     let s = applyAction(playing(), roll('a'), WIN, NOW)
@@ -123,13 +121,14 @@ describe('passing', () => {
   })
   it('ends with allPass after two full rounds of no-roll passes, split by forfeits', () => {
     let s = playing()
-    s = applyAction(s, roll('a', 10), LOSE, NOW) // a forfeits 10
-    s = applyAction(s, roll('b', 30), LOSE, NOW) // b forfeits 30
+    s = applyAction(s, roll('a', 20), LOSE, NOW)
+    s = applyAction(s, roll('b', 60), LOSE, NOW)
     for (let i = 0; i < 5; i++) s = applyAction(s, pass(current(s)), WIN, NOW)
     expect(s.status).toBe('playing')
     s = applyAction(s, pass(current(s)), WIN, NOW)
     expect(s.status).toBe('finished')
-    expect(s.result).toEqual({ reason: 'allPass', payouts: { a: 10, b: 30, c: 0 } })
+    expect(s.result).toEqual({ reason: 'allPass', payouts: { a: 20, b: 60, c: 0 } })
+    expect(s.players.a.credits).toBe(100)
   })
   it('resets the pass count when someone rolls', () => {
     let s = applyAction(playing(), pass('a'), WIN, NOW)
@@ -141,9 +140,9 @@ describe('passing', () => {
   it('ends with allPass when everyone is eliminated', () => {
     let s = playing({}, ['a', 'b'])
     s = applyAction(s, roll('a', 100), LOSE, NOW)
-    s = applyAction(s, roll('b', 100), LOSE, NOW)
+    s = applyAction(s, roll('b', 90), LOSE, NOW)
     expect(s.status).toBe('finished')
-    expect(s.result).toEqual({ reason: 'allPass', payouts: { a: 100, b: 100 } })
+    expect(s.result).toEqual({ reason: 'allPass', payouts: { a: 100, b: 90 } })
   })
 })
 
@@ -163,11 +162,11 @@ describe('invalid actions', () => {
     expectError(() => applyAction(playing(), roll('b'), WIN, NOW), 'not_your_turn')
     expectError(() => applyAction(playing(), pass('b'), WIN, NOW), 'not_your_turn')
   })
-  it.each([0, -5, 2.5, 101, NaN])('rejects bet %s', (bet) => {
+  it.each([0, 19, -5, 20.5, 101, NaN])('rejects bet %s (minimum 20)', (bet) => {
     expectError(() => applyAction(playing(), roll('a', bet), WIN, NOW), 'invalid_bet')
   })
-  it.each([0, 6, 2.5])('rejects %s losing faces', (faces) => {
-    expectError(() => applyAction(playing(), roll('a', 10, faces as 1), WIN, NOW), 'invalid_faces')
+  it('accepts the minimum bet of 20', () => {
+    expect(applyAction(playing(), roll('a', 20), WIN, NOW).players.a.credits).toBe(124)
   })
   it('rejects actions after the game finished', () => {
     expectError(() => applyAction(playing({ status: 'finished' }), roll('a'), WIN, NOW), 'not_playing')
@@ -180,12 +179,9 @@ describe('invalid actions', () => {
   })
 })
 
-describe('final credits', () => {
-  it('include the allPass payouts so settlement can just cash out credits', () => {
-    let s = playing()
-    s = applyAction(s, roll('a', 10), LOSE, NOW)
-    for (let i = 0; i < 6; i++) s = applyAction(s, pass(current(s)), WIN, NOW)
-    expect(s.players.a.credits).toBe(100)
-    expect(s.pool).toBe(0)
+describe('games saved by the previous version', () => {
+  it('play at 3/6 when no odds were picked', () => {
+    const s = applyAction(playing({ loseFaces: null }), roll('a', 50), WIN, NOW)
+    expect(s.players.a.credits).toBe(160)
   })
 })
