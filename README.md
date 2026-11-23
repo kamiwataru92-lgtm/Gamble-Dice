@@ -58,7 +58,7 @@ npm install
 npm install -g firebase-tools
 firebase login
 npm run build
-firebase deploy --only hosting,firestore:rules
+firebase deploy --only hosting,firestore
 ```
 
 表示された `https://<プロジェクトID>.web.app` を友達に送れば遊べます。
