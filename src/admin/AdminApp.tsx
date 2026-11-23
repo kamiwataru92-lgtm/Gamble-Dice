@@ -11,14 +11,13 @@ import { MAX_GIVE_COUNT } from './ops'
 function loginError(e: unknown): string {
   const code = (e as { code?: string }).code ?? ''
   if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-email') {
-    return 'メールアドレスかパスワードが違います'
+    return 'パスワードが違います'
   }
   if (code === 'auth/too-many-requests') return '失敗が続いたため一時的にロックされています。しばらく待ってください'
   return 'ログインできませんでした'
 }
 
 function Login() {
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -27,12 +26,13 @@ function Login() {
       e.preventDefault()
       setBusy(true)
       setError('')
-      adminSignIn(email, password).catch((err) => setError(loginError(err))).finally(() => setBusy(false))
+      adminSignIn(password).catch((err) => setError(loginError(err))).finally(() => setBusy(false))
     }}>
       <h2>管理者ログイン</h2>
-      <label>メールアドレス<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-      <label>パスワード<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
-      <button className="primary" disabled={busy || !email || !password}>ログイン</button>
+      {/* Hidden username so password managers can save the admin password. */}
+      <input type="text" autoComplete="username" value="Gamble Dice 管理者" readOnly hidden />
+      <label>パスワード<input type="password" autoComplete="current-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+      <button className="primary" disabled={busy || !password}>ログイン</button>
       {error && <p className="error">{error}</p>}
     </form>
   )

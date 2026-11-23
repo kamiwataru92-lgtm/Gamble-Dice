@@ -11,6 +11,7 @@ import { collection, connectFirestoreEmulator, doc, getDocs, getFirestore, runTr
 import { databaseId, firebaseConfig, usingEmulator } from '../firebase/app'
 import type { UserDoc } from '../firebase/wallet'
 import { GameError } from '../game/engine'
+import { ADMIN_LOGIN_EMAIL } from './config'
 import { adjustCoins, giveItem } from './ops'
 
 // A separate Firebase app instance so the admin session never mixes with a player's Google session.
@@ -22,7 +23,7 @@ if (usingEmulator) {
   connectFirestoreEmulator(db, '127.0.0.1', 8080)
 }
 
-export const adminSignIn = (email: string, password: string) => signInWithEmailAndPassword(adminAuth, email, password)
+export const adminSignIn = (password: string) => signInWithEmailAndPassword(adminAuth, ADMIN_LOGIN_EMAIL, password)
 export const adminSignOut = () => signOut(adminAuth)
 export const watchAdmin = (cb: (u: User | null) => void) => onAuthStateChanged(adminAuth, cb)
 

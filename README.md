@@ -38,9 +38,9 @@
 
 ## 管理者ページ
 
-`https://<プロジェクトID>.web.app/admin` で、メールアドレスとパスワードでログインします。プレイヤーのコインを増減したり、アイテムを配ったりできます。
+`https://<プロジェクトID>.web.app/admin` で、パスワードだけでログインします。プレイヤーのコインを増減したり、アイテムを配ったりできます。
 
-- 管理者アカウントは GitHub だけで作れます。リポジトリの Settings → Secrets and variables → Actions に `ADMIN_EMAIL`（メールアドレス）と `ADMIN_PASSWORD`（8 文字以上）を登録し、公開（Actions の「Deploy to Firebase」）を実行すると、作成または更新されます
+- 管理者アカウントは GitHub だけで作れます。リポジトリの Settings → Secrets and variables → Actions に `ADMIN_PASSWORD`（8 文字以上、長めを推奨）を登録し、公開（Actions の「Deploy to Firebase」）を実行すると、作成または更新されます
 - パスワードを変えるときは `ADMIN_PASSWORD` を書き換えて、もう一度公開を実行します
 - 管理者以外は、画面からもデータベースからも、他人のコインやアイテムを変更できない
 
