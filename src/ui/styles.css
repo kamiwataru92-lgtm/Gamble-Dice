@@ -93,3 +93,10 @@ button.primary small { color: inherit; opacity: 0.75; }
 select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 1rem; width: 100%; }
 .ok { color: var(--win); }
 input[type='email'], input[type='password'] { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 1rem; width: 100%; }
+
+.tabs { grid-template-columns: repeat(4, 1fr); }
+.tabs button { font-size: 0.78rem; padding: 10px 2px; position: relative; }
+.badge { position: absolute; top: -6px; right: -4px; background: var(--lose); color: #fff; border-radius: 999px; font-size: 0.7rem; padding: 1px 6px; }
+.code-sm { font-family: ui-monospace, monospace; font-size: 1.1rem; }
+section.danger { border-color: var(--lose); }
+button.danger { background: var(--lose); border-color: var(--lose); color: #fff; font-weight: 700; }

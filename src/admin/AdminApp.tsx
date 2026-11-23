@@ -6,7 +6,7 @@ import { ItemView } from '../ui/ItemView'
 import { errorMessage } from '../ui/messages'
 import { auth } from '../firebase/app'
 import { ADMIN_PASSWORD_SHA256 } from './config'
-import { changeCoins, listPlayers, sendItem, type Player } from './firebase'
+import { changeCoins, listPlayers, resetAllPlayers, sendItem, type Player } from './firebase'
 import { isAdminPassword, MAX_GIVE_COUNT } from './ops'
 
 const UNLOCK_KEY = 'gamble-dice-admin-unlocked'
@@ -145,7 +145,40 @@ function Dashboard() {
         </ul>
         {error && <p className="error">{error}</p>}
       </section>
+      <ResetAll onDone={reload} />
     </div>
+  )
+}
+
+function ResetAll({ onDone }: { onDone: () => void }) {
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  return (
+    <section className="card stack danger">
+      <h2>全員リセット</h2>
+      <small>
+        全プレイヤーのコインを 1,000 に戻し、ガチャのアイテムとアイコンを消し、入っている部屋から外します（部屋の中のクレジットは戻りません）。
+        名前・フレンドID・フレンドはそのまま。元に戻せません。
+      </small>
+      <label>確認のため「リセット」と入力<input value={typed} onChange={(e) => setTyped(e.target.value)} /></label>
+      <button className="danger" disabled={busy || typed !== 'リセット'} onClick={async () => {
+        setBusy(true)
+        setError('')
+        try {
+          setMessage(`${await resetAllPlayers()} 人をリセットしました`)
+          setTyped('')
+          onDone()
+        } catch (e) {
+          setError(errorMessage(e))
+        } finally {
+          setBusy(false)
+        }
+      }}>全員リセットする</button>
+      {message && <p className="center ok">{message}</p>}
+      {error && <p className="error">{error}</p>}
+    </section>
   )
 }
 

@@ -4,7 +4,9 @@ import { auth, signOut } from '../firebase/app'
 import { activeRoom, settlePending, watchRoom } from '../firebase/rooms'
 import { ensureUser, watchUser, type UserDoc } from '../firebase/wallet'
 import type { GameState } from '../game/types'
+import { watchFriends, type FriendStatus } from '../firebase/friends'
 import { Collection } from './Collection'
+import { Friends } from './Friends'
 import { GameBoard } from './GameBoard'
 import { Gacha } from './Gacha'
 import { Lobby } from './Lobby'
@@ -16,7 +18,8 @@ export function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [profile, setProfile] = useState<UserDoc | null>(null)
   const [loadError, setLoadError] = useState('')
-  const [tab, setTab] = useState<'game' | 'gacha' | 'collection'>('game')
+  const [tab, setTab] = useState<'game' | 'gacha' | 'collection' | 'friends'>('game')
+  const [friends, setFriends] = useState<FriendStatus[]>([])
   const [code, setCode] = useState<string | null>(null)
   const [room, setRoom] = useState<GameState | null>(null)
 
@@ -48,6 +51,8 @@ export function App() {
     return user ? watchUser(user.uid, setProfile) : undefined
   }, [user])
   const coins = profile?.coins ?? null
+  const friendKey = (profile?.friends ?? []).join(',')
+  useEffect(() => (friendKey ? watchFriends(friendKey.split(','), setFriends) : (setFriends([]), undefined)), [friendKey])
   useEffect(() => {
     setRoom(null)
     return code ? watchRoom(code, setRoom) : undefined
@@ -70,18 +75,22 @@ export function App() {
   if (!user) return <Login />
 
   const me = { uid: user.uid, displayName: profile?.displayName ?? user.displayName ?? 'プレイヤー', icon: profile?.icon ?? null }
+  const friendRoomCount = friends.reduce((n, f) => n + f.rooms.filter((r) => r.room.status === 'waiting').length, 0)
+  const pendingBadge = friendRoomCount > 0 ? <span className="badge">{friendRoomCount}</span> : null
   let body
   if (!code) {
     body = (
       <>
         <nav className="tabs">
-          {(['game', 'gacha', 'collection'] as const).map((t) => (
+          {(['game', 'gacha', 'collection', 'friends'] as const).map((t) => (
             <button key={t} className={tab === t ? 'selected' : ''} onClick={() => setTab(t)}>
-              {{ game: '🎲 ゲーム', gacha: '🎰 ガチャ', collection: '📦 所持品' }[t]}
+              {{ game: '🎲 ゲーム', gacha: '🎰 ガチャ', collection: '📦 所持品', friends: '👥 フレンド' }[t]}
+              {t === 'friends' && pendingBadge}
             </button>
           ))}
         </nav>
-        {tab === 'game' && <Lobby me={me} coins={coins ?? 0} onEnter={setCode} />}
+        {tab === 'game' && <Lobby me={me} coins={coins ?? 0} onEnter={setCode} friends={friends} />}
+        {tab === 'friends' && <Friends me={me} handle={profile?.handle ?? null} friends={friends} onEnter={setCode} />}
         {tab === 'gacha' && <Gacha uid={me.uid} coins={coins ?? 0} />}
         {tab === 'collection' && <Collection uid={me.uid} items={profile?.items ?? {}} icon={profile?.icon ?? null} />}
       </>

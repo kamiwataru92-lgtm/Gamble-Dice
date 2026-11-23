@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { createRoom, joinRoom } from '../firebase/rooms'
 import { renameUser } from '../firebase/wallet'
 import { DEFAULT_STREAK, MAX_BUY_IN, MAX_STREAK, MIN_STREAK } from '../game/config'
+import type { FriendStatus } from '../firebase/friends'
 import { BuyIn } from './BuyIn'
+import { FriendRooms } from './FriendRooms'
 import { MAX_NAME_LENGTH } from '../game/profile'
 import { errorMessage } from './messages'
 
@@ -10,9 +12,10 @@ interface Props {
   me: { uid: string; displayName: string; icon: string | null }
   coins: number
   onEnter: (code: string) => void
+  friends: FriendStatus[]
 }
 
-export function Lobby({ me, coins, onEnter }: Props) {
+export function Lobby({ me, coins, onEnter, friends }: Props) {
   const [buyIn, setBuyIn] = useState(MAX_BUY_IN)
   const [streak, setStreak] = useState(DEFAULT_STREAK)
   const [joinCode, setJoinCode] = useState('')
@@ -67,6 +70,13 @@ export function Lobby({ me, coins, onEnter }: Props) {
         )}
         {nameError && <p className="error">{nameError}</p>}
       </section>
+
+      {friends.some((f) => f.rooms.length > 0) && (
+        <section className="card stack">
+          <h2>フレンドの部屋</h2>
+          <FriendRooms friends={friends} onEnter={onEnter} />
+        </section>
+      )}
 
       <section className="card stack">
         <h2>持ち込むクレジット</h2>
