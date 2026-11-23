@@ -69,6 +69,10 @@ describe('rolling', () => {
     expect(s.currentStreak).toBe(1)
     expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, loseFaces: 5, face: 6, win: true, delta: 45 })
   })
+  it('restarts the turn timer after a win', () => {
+    const s = applyAction(playing(), roll('a'), WIN, NOW + 50_000)
+    expect(s.turnDeadline).toBe(NOW + 50_000 + 60_000)
+  })
   it('moves the bet to the pool and ends the turn on a loss in bet mode', () => {
     const s = applyAction(playing(), roll('a', 30), LOSE, NOW)
     expect(s.players.a.credits).toBe(70)

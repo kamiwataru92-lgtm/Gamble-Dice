@@ -37,6 +37,11 @@ export function App() {
     return code ? watchRoom(code, setRoom) : undefined
   }, [code])
 
+  // Left the waiting room (or it no longer exists): back to the lobby.
+  useEffect(() => {
+    if (user && room && room.status === 'waiting' && !room.players[user.uid]) setCode(null)
+  }, [user, room])
+
   if (user === undefined) return <main className="center">読み込み中…</main>
   if (!user) return <Login />
 

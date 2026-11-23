@@ -24,6 +24,7 @@ export function GameBoard({ code, room, me }: Props) {
   const [error, setError] = useState('')
   const [now, setNow] = useState(Date.now())
   const timedOut = useRef(0)
+  const sending = useRef(false)
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 500)
@@ -43,6 +44,9 @@ export function GameBoard({ code, room, me }: Props) {
   }, [mine, bet])
 
   async function run(action: Parameters<typeof act>[1]) {
+    // A ref, not just state: a fast double tap must not send two rolls before the re-render.
+    if (sending.current) return
+    sending.current = true
     setBusy(true)
     setError('')
     try {
@@ -50,6 +54,7 @@ export function GameBoard({ code, room, me }: Props) {
     } catch (e) {
       setError(errorMessage(e))
     } finally {
+      sending.current = false
       setBusy(false)
     }
   }

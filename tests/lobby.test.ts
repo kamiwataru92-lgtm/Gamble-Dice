@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GameError } from '../src/game/engine'
-import { addPlayer, createState, settlePlayer } from '../src/game/lobby'
+import { addPlayer, createState, removePlayer, settlePlayer } from '../src/game/lobby'
 import type { GameState } from '../src/game/types'
 
 const host = { uid: 'h', displayName: 'Host' }
@@ -69,5 +69,23 @@ describe('settlePlayer', () => {
   })
   it('rejects settling an unfinished game', () => {
     expectError(() => settlePlayer(createState(host, settings, 100, 1000), 'h'), 'not_finished')
+  })
+})
+
+describe('removePlayer', () => {
+  const room = () => addPlayer(createState(host, settings, 100, 1000), { uid: 'p', displayName: 'P' }, 40, 100)
+  it('removes a non-host from a waiting room and refunds the buy-in', () => {
+    const { state, refund } = removePlayer(room(), 'p')
+    expect(state.players.p).toBeUndefined()
+    expect(refund).toBe(40)
+  })
+  it('does not let the host leave (the host cancels instead)', () => {
+    expectError(() => removePlayer(room(), 'h'), 'host_cannot_leave')
+  })
+  it('rejects leaving after the game started', () => {
+    expectError(() => removePlayer({ ...room(), status: 'playing' }, 'p'), 'already_started')
+  })
+  it('rejects someone who is not in the room', () => {
+    expectError(() => removePlayer(room(), 'x'), 'not_in_room')
   })
 })

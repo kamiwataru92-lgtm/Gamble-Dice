@@ -57,6 +57,7 @@ export function applyAction(state: GameState, action: Action, rng: () => number,
     s.lastRoll = { uid, bet, loseFaces, face, win: true, delta }
     s.currentStreak += 1
     s.rolledThisTurn = true
+    s.turnDeadline = deadline(now)
     if (s.currentStreak >= s.settings.streakToWin) {
       const payouts = Object.fromEntries(s.turnOrder.map((u) => [u, u === uid ? s.pool : 0]))
       p.credits += s.pool

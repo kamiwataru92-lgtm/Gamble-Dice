@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
   invalid_settings: '連続当たりの回数は 1〜10 にしてください',
   not_finished: 'ゲームはまだ終わっていません',
   no_user: 'ユーザー情報がありません。ログインし直してください',
+  not_in_room: 'この部屋に参加していません',
+  host_cannot_leave: 'ホストは部屋を解散してください',
   code_collision: '部屋コードを作れませんでした。もう一度お試しください',
 }
 

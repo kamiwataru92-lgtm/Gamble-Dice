@@ -1,6 +1,6 @@
 import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore'
 import { applyAction, GameError, startGame } from '../game/engine'
-import { addPlayer, createState, settlePlayer } from '../game/lobby'
+import { addPlayer, createState, removePlayer, settlePlayer } from '../game/lobby'
 import { generateRoomCode } from '../game/roomCode'
 import type { Action, GameSettings, GameState } from '../game/types'
 import { db } from './app'
@@ -41,6 +41,18 @@ export async function joinRoom(code: string, user: User, buyIn: number): Promise
     const coins = await coinsOf(tx, user.uid)
     tx.set(roomRef(code), addPlayer(snap.data() as GameState, user, buyIn, coins))
     tx.update(userRef(user.uid), { coins: coins - buyIn, openRooms: arrayUnion(code) })
+  })
+}
+
+/** A non-host leaves before the game starts: buy-in refunded in the same transaction. */
+export async function leaveRoom(code: string, uid: string): Promise<void> {
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(roomRef(code))
+    const coins = await coinsOf(tx, uid)
+    if (!snap.exists()) throw new GameError('not_found')
+    const { state, refund } = removePlayer(snap.data() as GameState, uid)
+    tx.set(roomRef(code), state)
+    tx.update(userRef(uid), { coins: coins + refund, openRooms: arrayRemove(code) })
   })
 }
 

@@ -58,3 +58,14 @@ export function settlePlayer(state: GameState, uid: string): { state: GameState;
     coins: p.credits,
   }
 }
+
+/** A non-host leaves a room that has not started and gets their buy-in back. */
+export function removePlayer(state: GameState, uid: string): { state: GameState; refund: number } {
+  if (state.status !== 'waiting') throw new GameError('already_started')
+  const p = state.players[uid]
+  if (!p) throw new GameError('not_in_room')
+  if (uid === state.hostUid) throw new GameError('host_cannot_leave')
+  const players = { ...state.players }
+  delete players[uid]
+  return { state: { ...state, players }, refund: p.buyIn }
+}

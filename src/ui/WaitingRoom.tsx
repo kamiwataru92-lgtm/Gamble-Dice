@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { cancelRoom, startRoom } from '../firebase/rooms'
+import { cancelRoom, leaveRoom, startRoom } from '../firebase/rooms'
 import { MAX_PLAYERS, MIN_PLAYERS } from '../game/config'
 import type { GameState } from '../game/types'
 import { errorMessage } from './messages'
@@ -44,7 +44,10 @@ export function WaitingRoom({ code, room, me }: Props) {
           <button onClick={() => run(cancelRoom(code, me.uid))}>部屋を解散する（クレジットは返却）</button>
         </>
       ) : (
-        <p className="center">ホストが開始するのを待っています…</p>
+        <>
+          <p className="center">ホストが開始するのを待っています…</p>
+          <button onClick={() => run(leaveRoom(code, me.uid))}>部屋を抜ける（クレジットは返却）</button>
+        </>
       )}
       {error && <p className="error">{error}</p>}
     </div>
