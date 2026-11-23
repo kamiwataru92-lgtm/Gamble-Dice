@@ -4,3 +4,4 @@ dist
 .superpowers
 .firebase
 .firebaserc
+*-debug.log
