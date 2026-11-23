@@ -17,3 +17,10 @@ export function giveItem(owned: Record<string, number>, itemId: string, count: n
   if (!Number.isInteger(count) || count < 1 || count > MAX_GIVE_COUNT) throw new GameError('invalid_amount')
   return { ...owned, [itemId]: (owned[itemId] ?? 0) + count }
 }
+
+/** True when the SHA-256 of `password` equals `expectedHex`. */
+export async function isAdminPassword(password: string, expectedHex: string): Promise<boolean> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  return hex === expectedHex
+}

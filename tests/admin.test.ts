@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adjustCoins, giveItem } from '../src/admin/ops'
+import { adjustCoins, giveItem, isAdminPassword } from '../src/admin/ops'
 import { ITEMS } from '../src/gacha/catalog'
 import { GameError } from '../src/game/engine'
 
@@ -42,5 +42,18 @@ describe('giveItem', () => {
   })
   it.each([0, -1, 1.5, 1000])('rejects count %s', (count) => {
     expectError(() => giveItem({}, id, count), 'invalid_amount')
+  })
+})
+
+describe('isAdminPassword', () => {
+  // SHA-256("abc") test vector
+  const ABC = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'
+  it('accepts the password whose SHA-256 matches', async () => {
+    expect(await isAdminPassword('abc', ABC)).toBe(true)
+  })
+  it('rejects other passwords, including surrounding spaces', async () => {
+    expect(await isAdminPassword('abd', ABC)).toBe(false)
+    expect(await isAdminPassword(' abc', ABC)).toBe(false)
+    expect(await isAdminPassword('', ABC)).toBe(false)
   })
 })
