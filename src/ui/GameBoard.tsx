@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { act } from '../firebase/rooms'
-import { RATES } from '../game/config'
+import { MIN_BET, RATE_PERCENT } from '../game/config'
 import { winAmount } from '../game/rules'
-import type { GameState, LoseFaces } from '../game/types'
+import type { GameState } from '../game/types'
 import { Die } from './Die'
 import { PlayerName } from './ItemView'
 import { errorMessage } from './messages'
@@ -13,14 +13,13 @@ interface Props {
   me: { uid: string }
 }
 
-const FACES: LoseFaces[] = [1, 2, 3, 4, 5]
 
 export function GameBoard({ code, room, me }: Props) {
   const current = room.turnOrder[room.currentTurnIndex]
   const mine = room.players[me.uid]
   const myTurn = current === me.uid
-  const [bet, setBet] = useState(Math.min(10, mine?.credits ?? 1))
-  const [faces, setFaces] = useState<LoseFaces>(1)
+  const [bet, setBet] = useState(MIN_BET)
+  const faces = room.loseFaces ?? 3
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [now, setNow] = useState(Date.now())
@@ -41,7 +40,7 @@ export function GameBoard({ code, room, me }: Props) {
   }, [now, room.turnDeadline, code])
 
   useEffect(() => {
-    if (mine && bet > mine.credits) setBet(mine.credits)
+    if (mine && bet > mine.credits) setBet(Math.max(MIN_BET, mine.credits))
   }, [mine, bet])
 
   async function run(action: Parameters<typeof act>[1]) {
@@ -70,7 +69,7 @@ export function GameBoard({ code, room, me }: Props) {
         <small>中央のプール</small>
         <div className="big">{room.pool.toLocaleString()} cr</div>
         <small>
-          連続当たり {room.settings.streakToWin} 回で総取り ／ 没収：{room.settings.forfeitMode === 'bet' ? '賭けた額' : '半分'}
+          このゲームのハズレ <strong>{faces}/6</strong>（当たれば +{RATE_PERCENT[faces]}%）／ 連続当たり {room.settings.streakToWin} 回で総取り
         </small>
       </section>
 
@@ -79,7 +78,7 @@ export function GameBoard({ code, room, me }: Props) {
           <Die face={last.face} lose={!last.win} />
           <div>
             {lastName}：{last.win ? `当たり！ +${last.delta}` : `ハズレ… ${last.delta}`}
-            <small> （ハズレ {last.loseFaces}/6、賭け {last.bet}）</small>
+            <small> （賭け {last.bet}）</small>
           </div>
         </section>
       )}
@@ -110,23 +109,14 @@ export function GameBoard({ code, room, me }: Props) {
           <h2>あなたの番{room.currentStreak > 0 && `（${room.currentStreak} 連続当たり中）`}</h2>
           <label>
             賭け額（手持ち {mine.credits} cr）
-            <input type="number" min={1} max={mine.credits} value={bet} onChange={(e) => setBet(e.target.valueAsNumber)} />
+            <input type="number" min={MIN_BET} max={mine.credits} step={10} value={bet} onChange={(e) => setBet(e.target.valueAsNumber)} />
           </label>
-          <div className="faces">
-            {FACES.map((f) => (
-              <button key={f} className={f === faces ? 'selected' : ''} onClick={() => setFaces(f)}>
-                ハズレ {f}/6
-                <small>+{Math.round(RATES[f] * 100)}%</small>
-              </button>
-            ))}
-          </div>
           <small>
-            当たれば +{Number.isFinite(bet) ? winAmount(bet, faces) : 0} cr ／ ハズレたら{' '}
-            {room.settings.forfeitMode === 'bet' ? `${bet} cr` : `${Math.max(1, Math.floor(mine.credits / 2))} cr`} 没収
+            最低 {MIN_BET} cr ／ 当たれば +{Number.isFinite(bet) ? winAmount(bet, faces) : 0} cr ／ ハズレたら {bet} cr 没収
           </small>
           <div className="row">
             <button className="primary grow" disabled={busy}
-              onClick={() => run({ type: 'roll', uid: me.uid, bet, loseFaces: faces })}>
+              onClick={() => run({ type: 'roll', uid: me.uid, bet })}>
               🎲 振る
             </button>
             <button className="grow" disabled={busy} onClick={() => run({ type: 'pass', uid: me.uid })}>
@@ -135,7 +125,8 @@ export function GameBoard({ code, room, me }: Props) {
           </div>
         </section>
       )}
-      {mine?.eliminated && <p className="center">クレジットがなくなったので失格です。観戦中…</p>}
+      {mine?.eliminated && <p className="center">クレジットが {MIN_BET} 未満になったので失格です。観戦中…（残りはゲーム終了時にコインに戻ります）</p>}
+      {!mine && <p className="center">観戦中です。ゲームが終わると次のゲームに参加できます。</p>}
       {error && <p className="error">{error}</p>}
     </div>
   )

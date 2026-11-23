@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { settle } from '../firebase/rooms'
+import { exitRoom, nextGame, settle } from '../firebase/rooms'
 import { itemById } from '../gacha/catalog'
 import type { GameState } from '../game/types'
 import { playBgm, stopBgm } from './bgm'
 import { PlayerName } from './ItemView'
+import { errorMessage } from './messages'
 
 interface Props {
   code: string
@@ -21,6 +22,7 @@ export function Result({ code, room, me, coins, onLeave }: Props) {
     settle(code, me.uid).catch(() => (done.current = false))
   }, [code, me.uid])
 
+  const [error, setError] = useState('')
   const r = room.result
   const winnerPlayer = r?.winnerUid ? room.players[r.winnerUid] : undefined
   const winner = winnerPlayer?.displayName
@@ -31,7 +33,7 @@ export function Result({ code, room, me, coins, onLeave }: Props) {
     playBgm(bgm).then((ok) => setBlocked(!ok))
     return stopBgm
   }, [bgm])
-  const title = !r ? '部屋は解散されました' : r.reason === 'streak' ? `🏆 ${winner} が総取り！` : '全員パスで終了'
+  const title = r?.reason === 'streak' ? `🏆 ${winner} が総取り！` : '全員パスで終了'
 
   return (
     <div className="stack">
@@ -54,7 +56,9 @@ export function Result({ code, room, me, coins, onLeave }: Props) {
         </ul>
         <small>終了時のクレジットはコインに戻ります。所持コイン：{coins.toLocaleString()}</small>
       </section>
-      <button className="primary" onClick={onLeave}>ロビーに戻る</button>
+      <button className="primary" onClick={() => nextGame(code).catch((e) => setError(errorMessage(e)))}>次のゲームへ</button>
+      <button onClick={() => exitRoom(code, me.uid).then(onLeave).catch((e) => setError(errorMessage(e)))}>部屋を出る</button>
+      {error && <p className="error">{error}</p>}
     </div>
   )
 }

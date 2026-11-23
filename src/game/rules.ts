@@ -1,13 +1,10 @@
-import { RATES } from './config'
-import type { ForfeitMode, LoseFaces } from './types'
+import { RATE_PERCENT } from './config'
+import type { LoseFaces } from './types'
 
 export function winAmount(bet: number, loseFaces: LoseFaces): number {
-  return Math.floor(bet * RATES[loseFaces])
+  return Math.floor((bet * RATE_PERCENT[loseFaces]) / 100)
 }
 
-export function forfeitAmount(mode: ForfeitMode, bet: number, credits: number): number {
-  return mode === 'bet' ? bet : Math.max(1, Math.floor(credits / 2))
-}
 
 /** Faces 1..loseFaces lose; the rest win. */
 export function isWin(face: number, loseFaces: LoseFaces): boolean {

@@ -1,35 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { forfeitAmount, isWin, splitPool, winAmount } from '../src/game/rules'
+import { LOSE_FACE_OPTIONS, RATE_PERCENT } from '../src/game/config'
+import { isWin, splitPool, winAmount } from '../src/game/rules'
 
 describe('winAmount', () => {
-  it('applies the rate for the number of losing faces, floored', () => {
-    expect(winAmount(100, 1)).toBe(10)
-    expect(winAmount(100, 2)).toBe(20)
-    expect(winAmount(100, 3)).toBe(40)
-    expect(winAmount(100, 4)).toBe(60)
-    expect(winAmount(100, 5)).toBe(90)
-    expect(winAmount(15, 3)).toBe(6)
+  it('pays so that a roll returns about 110% on average, floored', () => {
+    expect(winAmount(100, 2)).toBe(65)
+    expect(winAmount(100, 3)).toBe(120)
+    expect(winAmount(100, 4)).toBe(230)
+    expect(winAmount(25, 2)).toBe(16) // floor(16.25)
   })
-})
-
-describe('forfeitAmount', () => {
-  it('takes the bet in bet mode', () => {
-    expect(forfeitAmount('bet', 30, 100)).toBe(30)
-  })
-  it('takes half the credits, floored, in half mode', () => {
-    expect(forfeitAmount('half', 30, 101)).toBe(50)
-  })
-  it('takes at least 1 in half mode', () => {
-    expect(forfeitAmount('half', 30, 1)).toBe(1)
+  it('keeps the expected return at 110% for every option', () => {
+    for (const f of LOSE_FACE_OPTIONS) {
+      const winChance = (6 - f) / 6
+      expect(winChance * (100 + RATE_PERCENT[f])).toBeCloseTo(110, 5)
+    }
   })
 })
 
 describe('isWin', () => {
   it('loses when the face is one of the losing faces', () => {
-    expect(isWin(2, 1)).toBe(true)
-    expect(isWin(1, 1)).toBe(false)
-    expect(isWin(6, 5)).toBe(true)
-    expect(isWin(5, 5)).toBe(false)
+    expect(isWin(3, 2)).toBe(true)
+    expect(isWin(2, 2)).toBe(false)
+    expect(isWin(5, 4)).toBe(true)
+    expect(isWin(4, 4)).toBe(false)
   })
 })
 

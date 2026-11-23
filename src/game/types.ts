@@ -1,5 +1,4 @@
-export type ForfeitMode = 'bet' | 'half'
-export type LoseFaces = 1 | 2 | 3 | 4 | 5
+export type LoseFaces = 2 | 3 | 4
 
 export interface PlayerState {
   uid: string
@@ -14,14 +13,12 @@ export interface PlayerState {
 }
 
 export interface GameSettings {
-  forfeitMode: ForfeitMode
   streakToWin: number
 }
 
 export interface LastRoll {
   uid: string
   bet: number
-  loseFaces: LoseFaces
   face: number
   win: boolean
   /** Credits gained (positive) or forfeited (negative). */
@@ -37,8 +34,11 @@ export interface GameResult {
 
 export interface GameState {
   status: 'waiting' | 'playing' | 'finished'
-  hostUid: string
+  /** 1 for the first game in this room, +1 for each next game. */
+  round: number
   settings: GameSettings
+  /** Losing faces out of 6 for this game, picked at start. */
+  loseFaces: LoseFaces | null
   players: Record<string, PlayerState>
   turnOrder: string[]
   currentTurnIndex: number
@@ -50,9 +50,11 @@ export interface GameState {
   turnDeadline: number
   lastRoll: LastRoll | null
   result: GameResult | null
+  /** Credits owed to players from earlier games in this room who have not cashed out yet. */
+  unsettled: Record<string, number>
 }
 
 export type Action =
-  | { type: 'roll'; uid: string; bet: number; loseFaces: LoseFaces }
+  | { type: 'roll'; uid: string; bet: number }
   | { type: 'pass'; uid: string }
   | { type: 'timeout'; now: number }

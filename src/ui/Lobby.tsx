@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { createRoom, joinRoom } from '../firebase/rooms'
 import { renameUser } from '../firebase/wallet'
 import { DEFAULT_STREAK, MAX_BUY_IN, MAX_STREAK, MIN_STREAK } from '../game/config'
+import { BuyIn } from './BuyIn'
 import { MAX_NAME_LENGTH } from '../game/profile'
-import type { ForfeitMode } from '../game/types'
 import { errorMessage } from './messages'
 
 interface Props {
@@ -13,8 +13,7 @@ interface Props {
 }
 
 export function Lobby({ me, coins, onEnter }: Props) {
-  const [buyIn, setBuyIn] = useState(100)
-  const [mode, setMode] = useState<ForfeitMode>('bet')
+  const [buyIn, setBuyIn] = useState(MAX_BUY_IN)
   const [streak, setStreak] = useState(DEFAULT_STREAK)
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState('')
@@ -71,26 +70,18 @@ export function Lobby({ me, coins, onEnter }: Props) {
 
       <section className="card stack">
         <h2>持ち込むクレジット</h2>
-        <label>
-          コインから換えるクレジット（最大 {MAX_BUY_IN}、あとから追加できません）
-          <input type="number" min={1} max={Math.min(MAX_BUY_IN, coins)} value={buyIn} onChange={(e) => setBuyIn(e.target.valueAsNumber)} />
-        </label>
-        <small>所持コイン：{coins.toLocaleString()}（1 コイン = 1 クレジット）</small>
+        <BuyIn value={buyIn} onChange={setBuyIn} coins={coins} />
       </section>
 
       <section className="card stack">
         <h2>部屋を作る</h2>
-        <fieldset>
-          <legend>ハズレたときの没収</legend>
-          <label className="row"><input type="radio" checked={mode === 'bet'} onChange={() => setMode('bet')} /> 賭けた額だけ</label>
-          <label className="row"><input type="radio" checked={mode === 'half'} onChange={() => setMode('half')} /> 持っているクレジットの半分</label>
-        </fieldset>
+        <small>ハズレの確率はゲームごとにランダム（2/6・3/6・4/6）。ゲームが終わっても部屋は残り、続けて遊べます。</small>
         <label>
           総取りに必要な連続当たり
           <input type="number" min={MIN_STREAK} max={MAX_STREAK} value={streak} onChange={(e) => setStreak(e.target.valueAsNumber)} />
         </label>
         <button className="primary" disabled={busy}
-          onClick={() => run(() => createRoom(me, { forfeitMode: mode, streakToWin: streak }, buyIn))}>
+          onClick={() => run(() => createRoom(me, { streakToWin: streak }, buyIn))}>
           部屋を作る
         </button>
       </section>

@@ -53,11 +53,6 @@ export function App() {
     return code ? watchRoom(code, setRoom) : undefined
   }, [code])
 
-  // Left the waiting room (or it no longer exists): back to the lobby.
-  useEffect(() => {
-    if (user && room && room.status === 'waiting' && !room.players[user.uid]) setCode(null)
-  }, [user, room])
-
   if (user === undefined) {
     return (
       <main className="center stack">
@@ -93,7 +88,7 @@ export function App() {
     )
   }
   else if (!room) body = <p className="center">部屋を読み込み中…</p>
-  else if (room.status === 'waiting') body = <WaitingRoom code={code} room={room} me={me} />
+  else if (room.status === 'waiting') body = <WaitingRoom code={code} room={room} me={me} coins={coins ?? 0} onLeave={() => setCode(null)} />
   else if (room.status === 'playing') body = <GameBoard code={code} room={room} me={me} />
   else body = <Result code={code} room={room} me={me} coins={coins ?? 0} onLeave={() => setCode(null)} />
 
