@@ -1,11 +1,6 @@
 /**
- * The admin's Firebase Auth UID. The account is created by scripts/setup-admin.mjs (run from the deploy
- * workflow) from the ADMIN_PASSWORD GitHub secret. Must match `isAdmin()` in firestore.rules.
+ * SHA-256 of the admin password for the in-game /admin page. This is a friends-only game, so the password
+ * is only a light lock: anyone reading the code could get past it. To change it, replace this hash with
+ * the SHA-256 of the new password (e.g. `printf '%s' 'new-password' | sha256sum`).
  */
-export const ADMIN_UID = 'gamble-dice-admin'
-
-/**
- * Firebase Auth needs an email, but the admin only types a password: this fixed, never-delivered address
- * (the .invalid domain is reserved) is used behind the scenes. Keep in sync with scripts/setup-admin.mjs.
- */
-export const ADMIN_LOGIN_EMAIL = 'admin@gamble-dice.invalid'
+export const ADMIN_PASSWORD_SHA256 = 'a3c595e09a5e5965c826cd3d544ed2237d052160a56f087d61299879c3199319'

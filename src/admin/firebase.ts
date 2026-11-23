@@ -1,31 +1,8 @@
-import { initializeApp } from 'firebase/app'
-import {
-  connectAuthEmulator,
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  type User,
-} from 'firebase/auth'
-import { collection, connectFirestoreEmulator, doc, getDocs, getFirestore, runTransaction } from 'firebase/firestore'
-import { databaseId, firebaseConfig, usingEmulator } from '../firebase/app'
+import { collection, doc, getDocs, runTransaction } from 'firebase/firestore'
+import { db } from '../firebase/app'
 import type { UserDoc } from '../firebase/wallet'
 import { GameError } from '../game/engine'
-import { ADMIN_LOGIN_EMAIL } from './config'
 import { adjustCoins, giveItem } from './ops'
-
-// A separate Firebase app instance so the admin session never mixes with a player's Google session.
-const app = initializeApp(firebaseConfig, 'admin')
-export const adminAuth = getAuth(app)
-const db = getFirestore(app, databaseId)
-if (usingEmulator) {
-  connectAuthEmulator(adminAuth, 'http://127.0.0.1:9099', { disableWarnings: true })
-  connectFirestoreEmulator(db, '127.0.0.1', 8080)
-}
-
-export const adminSignIn = (password: string) => signInWithEmailAndPassword(adminAuth, ADMIN_LOGIN_EMAIL, password)
-export const adminSignOut = () => signOut(adminAuth)
-export const watchAdmin = (cb: (u: User | null) => void) => onAuthStateChanged(adminAuth, cb)
 
 export interface Player extends UserDoc {
   uid: string

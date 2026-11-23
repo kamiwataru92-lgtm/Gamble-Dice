@@ -1,38 +1,44 @@
-import type { User } from 'firebase/auth'
+import { onAuthStateChanged, type User } from 'firebase/auth'
 import { useEffect, useMemo, useState } from 'react'
 import { ITEMS, itemById } from '../gacha/catalog'
 import { RARITY_LABELS, RARITIES } from '../gacha/config'
 import { ItemView } from '../ui/ItemView'
 import { errorMessage } from '../ui/messages'
-import { ADMIN_UID } from './config'
-import { adminSignIn, adminSignOut, changeCoins, listPlayers, sendItem, watchAdmin, type Player } from './firebase'
-import { MAX_GIVE_COUNT } from './ops'
+import { auth } from '../firebase/app'
+import { ADMIN_PASSWORD_SHA256 } from './config'
+import { changeCoins, listPlayers, sendItem, type Player } from './firebase'
+import { isAdminPassword, MAX_GIVE_COUNT } from './ops'
 
-function loginError(e: unknown): string {
-  const code = (e as { code?: string }).code ?? ''
-  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-email') {
-    return 'パスワードが違います'
+const UNLOCK_KEY = 'gamble-dice-admin-unlocked'
+function readUnlocked(): boolean {
+  try {
+    return sessionStorage.getItem(UNLOCK_KEY) === '1'
+  } catch {
+    return false
   }
-  if (code === 'auth/too-many-requests') return '失敗が続いたため一時的にロックされています。しばらく待ってください'
-  return 'ログインできませんでした'
+}
+function writeUnlocked(v: boolean) {
+  try {
+    if (v) sessionStorage.setItem(UNLOCK_KEY, '1')
+    else sessionStorage.removeItem(UNLOCK_KEY)
+  } catch {
+    /* storage unavailable: stay unlocked for this page only */
+  }
 }
 
-function Login() {
+function Unlock({ onUnlock }: { onUnlock: () => void }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
   return (
-    <form className="card stack" onSubmit={(e) => {
+    <form className="card stack" onSubmit={async (e) => {
       e.preventDefault()
-      setBusy(true)
-      setError('')
-      adminSignIn(password).catch((err) => setError(loginError(err))).finally(() => setBusy(false))
+      if (await isAdminPassword(password, ADMIN_PASSWORD_SHA256)) onUnlock()
+      else setError('パスワードが違います')
     }}>
       <h2>管理者ログイン</h2>
-      {/* Hidden username so password managers can save the admin password. */}
       <input type="text" autoComplete="username" value="Gamble Dice 管理者" readOnly hidden />
       <label>パスワード<input type="password" autoComplete="current-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} /></label>
-      <button className="primary" disabled={busy || !password}>ログイン</button>
+      <button className="primary" disabled={!password}>ログイン</button>
       {error && <p className="error">{error}</p>}
     </form>
   )
@@ -145,19 +151,23 @@ function Dashboard() {
 
 export function AdminApp() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
-  useEffect(() => watchAdmin(setUser), [])
+  const [unlocked, setUnlocked] = useState(readUnlocked)
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
 
   let body
   if (user === undefined) body = <p className="center">読み込み中…</p>
-  else if (!user) body = <Login />
-  else if (user.uid !== ADMIN_UID) body = <p className="error">このアカウントは管理者ではありません。</p>
+  else if (!user) body = <p className="center">先に <a href="/">ゲーム</a> で Google ログインしてから、もう一度 /admin を開いてください。</p>
+  else if (!unlocked) body = <Unlock onUnlock={() => { writeUnlocked(true); setUnlocked(true) }} />
   else body = <Dashboard />
 
   return (
     <>
       <header className="bar">
         <strong>Gamble Dice 管理</strong>
-        {user && <button className="link" onClick={adminSignOut}>ログアウト</button>}
+        <span>
+          <a className="link" href="/">ゲームへ</a>
+          {unlocked && <button className="link" onClick={() => { writeUnlocked(false); setUnlocked(false) }}>管理を終了</button>}
+        </span>
       </header>
       <main>{body}</main>
     </>
