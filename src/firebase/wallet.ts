@@ -3,6 +3,7 @@ import { INITIAL_COINS } from '../game/config'
 import { purchase, setIcon } from '../gacha/draw'
 import type { Item } from '../gacha/types'
 import { GameError } from '../game/engine'
+import { normalizeName } from '../game/profile'
 import { db } from './app'
 
 /**
@@ -43,6 +44,15 @@ export async function buyGacha(uid: string, count: 1 | 9): Promise<Item[]> {
     const result = purchase({ coins: user.coins, items: user.items ?? {} }, count, Math.random)
     tx.update(userRef(uid), { coins: result.coins, items: result.items })
     return result.drawn
+  })
+}
+
+export async function renameUser(uid: string, name: string): Promise<void> {
+  const displayName = normalizeName(name)
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(userRef(uid))
+    if (!snap.exists()) throw new GameError('no_user')
+    tx.update(userRef(uid), { displayName })
   })
 }
 

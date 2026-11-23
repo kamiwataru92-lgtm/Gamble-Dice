@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { createRoom, joinRoom } from '../firebase/rooms'
+import { renameUser } from '../firebase/wallet'
 import { DEFAULT_STREAK, MAX_BUY_IN, MAX_STREAK, MIN_STREAK } from '../game/config'
+import { MAX_NAME_LENGTH } from '../game/profile'
 import type { ForfeitMode } from '../game/types'
 import { errorMessage } from './messages'
 
@@ -17,6 +19,19 @@ export function Lobby({ me, coins, onEnter }: Props) {
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [editingName, setEditingName] = useState<string | null>(null)
+  const [nameError, setNameError] = useState('')
+
+  async function saveName() {
+    if (editingName === null) return
+    try {
+      await renameUser(me.uid, editingName)
+      setEditingName(null)
+      setNameError('')
+    } catch (e) {
+      setNameError(errorMessage(e))
+    }
+  }
 
   async function run(fn: () => Promise<string>) {
     setBusy(true)
@@ -32,6 +47,28 @@ export function Lobby({ me, coins, onEnter }: Props) {
 
   return (
     <div className="stack">
+      <section className="card stack">
+        <h2>あなたの名前</h2>
+        {editingName === null ? (
+          <div className="row">
+            <span className="grow">{me.displayName}</span>
+            <button onClick={() => setEditingName(me.displayName)}>変更</button>
+          </div>
+        ) : (
+          <>
+            <input value={editingName} maxLength={40} autoFocus
+              onChange={(e) => setEditingName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && saveName()} />
+            <small>{MAX_NAME_LENGTH} 文字まで。これから入る部屋から反映されます。</small>
+            <div className="row">
+              <button className="primary grow" onClick={saveName}>保存</button>
+              <button className="grow" onClick={() => { setEditingName(null); setNameError('') }}>やめる</button>
+            </div>
+          </>
+        )}
+        {nameError && <p className="error">{nameError}</p>}
+      </section>
+
       <section className="card stack">
         <h2>持ち込むクレジット</h2>
         <label>
