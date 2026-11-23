@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { cancelRoom, leaveRoom, startRoom } from '../firebase/rooms'
 import { MAX_PLAYERS, MIN_PLAYERS } from '../game/config'
 import type { GameState } from '../game/types'
+import { PlayerName } from './ItemView'
 import { errorMessage } from './messages'
 
 interface Props {
@@ -31,7 +32,8 @@ export function WaitingRoom({ code, room, me }: Props) {
         <ul className="list">
           {players.map((p) => (
             <li key={p.uid}>
-              {p.displayName}{p.uid === room.hostUid && ' 👑'}<span>{p.credits} cr</span>
+              <span><PlayerName name={p.displayName} icon={p.icon} />{p.uid === room.hostUid && ' 👑'}</span>
+              <span>{p.credits} cr</span>
             </li>
           ))}
         </ul>

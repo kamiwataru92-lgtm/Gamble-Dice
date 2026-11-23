@@ -5,7 +5,7 @@ import type { ForfeitMode } from '../game/types'
 import { errorMessage } from './messages'
 
 interface Props {
-  me: { uid: string; displayName: string }
+  me: { uid: string; displayName: string; icon: string | null }
   coins: number
   onEnter: (code: string) => void
 }

@@ -4,6 +4,7 @@ import { RATES } from '../game/config'
 import { winAmount } from '../game/rules'
 import type { GameState, LoseFaces } from '../game/types'
 import { Die } from './Die'
+import { PlayerName } from './ItemView'
 import { errorMessage } from './messages'
 
 interface Props {
@@ -90,7 +91,7 @@ export function GameBoard({ code, room, me }: Props) {
             return (
               <li key={uid} className={`${uid === current ? 'turn' : ''} ${p.eliminated ? 'out' : ''}`}>
                 <span>
-                  {uid === current && '▶ '}{p.displayName}{uid === me.uid && '（あなた）'}
+                  {uid === current && '▶ '}<PlayerName name={p.displayName} icon={p.icon} />{uid === me.uid && '（あなた）'}
                   {uid === current && room.currentStreak > 0 && ` 🔥${room.currentStreak}`}
                 </span>
                 <span>{p.eliminated ? '失格' : `${p.credits} cr`}</span>

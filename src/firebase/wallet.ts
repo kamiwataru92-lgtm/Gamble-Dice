@@ -30,10 +30,6 @@ export async function ensureUser(uid: string, displayName: string): Promise<void
   })
 }
 
-export function watchCoins(uid: string, cb: (coins: number) => void): () => void {
-  return onSnapshot(userRef(uid), (snap) => cb((snap.data() as UserDoc | undefined)?.coins ?? 0))
-}
-
 export function watchUser(uid: string, cb: (user: UserDoc | null) => void): () => void {
   return onSnapshot(userRef(uid), (snap) => cb(snap.exists() ? (snap.data() as UserDoc) : null))
 }

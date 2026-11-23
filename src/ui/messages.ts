@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
   no_user: 'ユーザー情報がありません。ログインし直してください',
   not_in_room: 'この部屋に参加していません',
   host_cannot_leave: 'ホストは部屋を解散してください',
+  not_owned: 'そのアイテムを持っていません',
   code_collision: '部屋コードを作れませんでした。もう一度お試しください',
 }
 

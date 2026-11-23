@@ -2,9 +2,11 @@ import { onAuthStateChanged, type User } from 'firebase/auth'
 import { useEffect, useState } from 'react'
 import { auth, signOut } from '../firebase/app'
 import { activeRoom, settlePending, watchRoom } from '../firebase/rooms'
-import { ensureUser, watchCoins } from '../firebase/wallet'
+import { ensureUser, watchUser, type UserDoc } from '../firebase/wallet'
 import type { GameState } from '../game/types'
+import { Collection } from './Collection'
 import { GameBoard } from './GameBoard'
+import { Gacha } from './Gacha'
 import { Lobby } from './Lobby'
 import { Login } from './Login'
 import { Result } from './Result'
@@ -12,7 +14,8 @@ import { WaitingRoom } from './WaitingRoom'
 
 export function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
-  const [coins, setCoins] = useState<number | null>(null)
+  const [profile, setProfile] = useState<UserDoc | null>(null)
+  const [tab, setTab] = useState<'game' | 'gacha' | 'collection'>('game')
   const [code, setCode] = useState<string | null>(null)
   const [room, setRoom] = useState<GameState | null>(null)
 
@@ -29,9 +32,10 @@ export function App() {
     [],
   )
   useEffect(() => {
-    setCoins(null)
-    return user ? watchCoins(user.uid, setCoins) : undefined
+    setProfile(null)
+    return user ? watchUser(user.uid, setProfile) : undefined
   }, [user])
+  const coins = profile?.coins ?? null
   useEffect(() => {
     setRoom(null)
     return code ? watchRoom(code, setRoom) : undefined
@@ -45,9 +49,24 @@ export function App() {
   if (user === undefined) return <main className="center">読み込み中…</main>
   if (!user) return <Login />
 
-  const me = { uid: user.uid, displayName: user.displayName ?? 'プレイヤー' }
+  const me = { uid: user.uid, displayName: user.displayName ?? 'プレイヤー', icon: profile?.icon ?? null }
   let body
-  if (!code) body = <Lobby me={me} coins={coins ?? 0} onEnter={setCode} />
+  if (!code) {
+    body = (
+      <>
+        <nav className="tabs">
+          {(['game', 'gacha', 'collection'] as const).map((t) => (
+            <button key={t} className={tab === t ? 'selected' : ''} onClick={() => setTab(t)}>
+              {{ game: '🎲 ゲーム', gacha: '🎰 ガチャ', collection: '📦 所持品' }[t]}
+            </button>
+          ))}
+        </nav>
+        {tab === 'game' && <Lobby me={me} coins={coins ?? 0} onEnter={setCode} />}
+        {tab === 'gacha' && <Gacha uid={me.uid} coins={coins ?? 0} />}
+        {tab === 'collection' && <Collection uid={me.uid} items={profile?.items ?? {}} icon={profile?.icon ?? null} />}
+      </>
+    )
+  }
   else if (!room) body = <p className="center">部屋を読み込み中…</p>
   else if (room.status === 'waiting') body = <WaitingRoom code={code} room={room} me={me} />
   else if (room.status === 'playing') body = <GameBoard code={code} room={room} me={me} />

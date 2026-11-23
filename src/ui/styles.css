@@ -59,3 +59,34 @@ button.link { border: 0; padding: 0 0 0 8px; color: var(--muted); font-size: 0.8
 .die.lose span.pip { background: var(--lose); }
 @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .amount { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
+
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+.tabs button { padding: 10px 4px; font-size: 0.9rem; }
+.tabs button.selected, .collection-cell.selected { border-color: var(--accent); background: rgba(245, 184, 61, 0.15); }
+.player-name { display: inline-flex; align-items: center; gap: 4px; }
+.item { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.item img { width: 100%; height: 100%; object-fit: contain; }
+.item-sm { width: 1.3em; height: 1.3em; font-size: 1.05em; }
+.item-md { width: 40px; height: 40px; font-size: 30px; }
+.item-lg { width: 52px; height: 52px; font-size: 40px; }
+.gacha-result { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gacha-result.count-1 { grid-template-columns: 1fr; justify-items: center; }
+.gacha-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px;
+  border: 2px solid var(--line); border-radius: 10px; animation: pop 0.35s ease-out backwards; min-width: 0;
+}
+.gacha-cell small { font-size: 0.7rem; white-space: nowrap; }
+.collection { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; margin-top: 8px; }
+.collection-cell { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-width: 2px; }
+.rarity { font-weight: 700; }
+.r-common { --r: #9a9db0; }
+.r-uncommon { --r: #3ecf8e; }
+.r-rare { --r: #4ea3ff; }
+.r-superRare { --r: #b46cff; }
+.r-epic { --r: #ff6cc4; }
+.r-legendary { --r: #f5b83d; }
+.r-mythic { --r: #ff4d4d; }
+.rarity.r-common, .rarity.r-uncommon, .rarity.r-rare, .rarity.r-superRare, .rarity.r-epic, .rarity.r-legendary, .rarity.r-mythic { color: var(--r); }
+.gacha-cell[class*='r-'], .collection-cell[class*='r-'] { border-color: var(--r); }
+.gacha-cell.r-superRare, .gacha-cell.r-epic, .gacha-cell.r-legendary, .gacha-cell.r-mythic { box-shadow: 0 0 12px var(--r); }
+button.primary small { color: inherit; opacity: 0.75; }
