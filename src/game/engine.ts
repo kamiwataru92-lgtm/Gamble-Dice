@@ -1,4 +1,4 @@
-import { LOSE_FACE_OPTIONS, MIN_BET, MIN_PLAYERS, PASS_ROUNDS_TO_END, TURN_SECONDS } from './config'
+import { LOSE_FACE_OPTIONS, MAX_BET, MIN_BET, MIN_PLAYERS, PASS_ROUNDS_TO_END, TURN_SECONDS } from './config'
 import { isWin, splitPool, winAmount } from './rules'
 import type { Action, GameState } from './types'
 
@@ -50,7 +50,7 @@ export function applyAction(state: GameState, action: Action, rng: () => number,
   const { bet } = action
   // Games started before odds were picked per game have no loseFaces: treat them as 3/6.
   const loseFaces = s.loseFaces ?? 3
-  if (!Number.isInteger(bet) || bet < MIN_BET || bet > p.credits) throw new GameError('invalid_bet')
+  if (!Number.isInteger(bet) || bet < MIN_BET || bet > MAX_BET || bet > p.credits) throw new GameError('invalid_bet')
 
   const face = Math.floor(rng() * 6) + 1
   s.consecutivePasses = 0
@@ -89,9 +89,9 @@ function endTurn(s: GameState, now: number): GameState {
   s.currentStreak = 0
   s.rolledThisTurn = false
   const active = s.turnOrder.filter((u) => !s.players[u].eliminated)
-  if (active.length === 0 || s.consecutivePasses >= PASS_ROUNDS_TO_END * active.length) {
-    return finishAllPass(s)
-  }
+  // Only one player (or nobody) left: stop, so a lone survivor can't keep rolling.
+  if (active.length <= 1) return finishSplit(s, 'lastOne')
+  if (s.consecutivePasses >= PASS_ROUNDS_TO_END * active.length) return finishSplit(s, 'allPass')
   let i = s.currentTurnIndex
   do i = (i + 1) % s.turnOrder.length
   while (s.players[s.turnOrder[i]].eliminated)
@@ -100,7 +100,7 @@ function endTurn(s: GameState, now: number): GameState {
   return s
 }
 
-function finishAllPass(s: GameState): GameState {
+function finishSplit(s: GameState, reason: 'allPass' | 'lastOne'): GameState {
   const payouts = splitPool(
     s.pool,
     s.turnOrder.map((u) => ({ uid: u, amount: s.players[u].forfeitedTotal })),
@@ -108,6 +108,6 @@ function finishAllPass(s: GameState): GameState {
   for (const u of s.turnOrder) s.players[u].credits += payouts[u]
   s.pool = 0
   s.status = 'finished'
-  s.result = { reason: 'allPass', payouts }
+  s.result = { reason, payouts }
   return s
 }
