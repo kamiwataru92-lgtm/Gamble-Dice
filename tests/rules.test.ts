@@ -4,18 +4,19 @@ import { isWin, winAmount } from '../src/game/rules'
 
 describe('winAmount', () => {
   it('pays the bonus on a win, floored', () => {
-    expect(winAmount(100, 2)).toBe(150)
-    expect(winAmount(100, 3)).toBe(200)
-    expect(winAmount(100, 4)).toBe(300)
-    expect(winAmount(25, 2)).toBe(37) // floor(37.5)
+    expect(winAmount(100, 2)).toBe(140)
+    expect(winAmount(100, 3)).toBe(185)
+    expect(winAmount(100, 4)).toBe(280)
+    expect(winAmount(50, 3)).toBe(92) // floor(92.5)
   })
-  it('returns 200% per roll across all players, counting the pool', () => {
+  it('adds about the same per roll whichever odds the game picked', () => {
     // A lost bet goes to the pool and comes back to some player, so only wins create credits:
     // total return per roll = 100% + (win chance) × (bonus %).
     for (const f of LOSE_FACE_OPTIONS) {
       const winChance = (6 - f) / 6
       const total = 100 + winChance * RATE_PERCENT[f]
-      expect(total).toBeCloseTo(200, 5)
+      expect(total).toBeGreaterThan(192)
+      expect(total).toBeLessThan(194)
     }
   })
 })
