@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-gamble",
+    "dev:emu": "VITE_USE_EMULATOR=1 VITE_FIREBASE_API_KEY=demo-key VITE_FIREBASE_AUTH_DOMAIN=demo-gamble.firebaseapp.com VITE_FIREBASE_PROJECT_ID=demo-gamble VITE_FIREBASE_APP_ID=1:1:web:1 vite"
   },
   "dependencies": {
     "firebase": "^10.14.1",
