@@ -10,6 +10,8 @@ export interface PlayerState {
   forfeitedTotal: number
   eliminated: boolean
   settled: boolean
+  /** This player's own losses in a row (their wins reset it); at LOSSES_TO_BANKRUPT they go bankrupt. */
+  lossStreak: number
 }
 
 export interface GameSettings {
@@ -23,6 +25,10 @@ export interface LastRoll {
   win: boolean
   /** Credits gained (positive) or forfeited (negative). */
   delta: number
+  /** Pool credits wiped out by this roll (losses in a row), else 0. */
+  wipedPool: number
+  /** The roller went bankrupt with this roll (their own losses in a row). */
+  bankrupt: boolean
 }
 
 export interface GameResult {
@@ -42,7 +48,10 @@ export interface GameState {
   players: Record<string, PlayerState>
   turnOrder: string[]
   currentTurnIndex: number
+  /** Wins in a row by anyone in the room (passes don't break it). */
   currentStreak: number
+  /** Losses in a row by anyone in the room; at LOSSES_TO_WIPE_POOL the pool is wiped. */
+  lossStreak: number
   rolledThisTurn: boolean
   consecutivePasses: number
   pool: number

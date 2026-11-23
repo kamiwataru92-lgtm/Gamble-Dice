@@ -24,7 +24,7 @@ describe('createState', () => {
     expect(s.round).toBe(1)
     expect(s.loseFaces).toBeNull()
     expect(s.players.h).toEqual({
-      uid: 'h', displayName: 'Host', icon: 'moai', credits: 80, buyIn: 80, forfeitedTotal: 0, eliminated: false, settled: false,
+      uid: 'h', displayName: 'Host', icon: 'moai', credits: 80, buyIn: 80, forfeitedTotal: 0, eliminated: false, settled: false, lossStreak: 0,
     })
   })
   it.each([0, 19, 1.5, 101])('rejects buy-in %s (20 to 100)', (buyIn) => {

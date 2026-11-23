@@ -100,3 +100,11 @@ input[type='email'], input[type='password'] { background: var(--bg); color: var(
 .code-sm { font-family: ui-monospace, monospace; font-size: 1.1rem; }
 section.danger { border-color: var(--lose); }
 button.danger { background: var(--lose); border-color: var(--lose); color: #fff; font-weight: 700; }
+
+.streaks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.streaks span { display: flex; flex-direction: column; align-items: center; padding: 6px 4px; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
+.streaks span small { font-weight: 400; font-size: 0.7rem; }
+.streaks .hot { border-color: var(--accent); color: var(--accent); }
+.streaks .cold { border-color: var(--lose); color: var(--lose); }
+.wipe { display: block; color: var(--lose); margin-top: 4px; }
+.skull { color: var(--lose); }

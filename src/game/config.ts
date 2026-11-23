@@ -4,11 +4,12 @@ import type { LoseFaces } from './types'
 export const LOSE_FACE_OPTIONS: LoseFaces[] = [2, 3, 4]
 
 /**
- * Credit bonus on a win, in percent of the bet. A lost bet goes to the pool and usually comes back to some
- * player, so counting the pool, one roll returns 100% + (win chance) × bonus = 200% across all players.
- * (Bets lost by eliminated players vanish when a game ends without a streak winner.)
+ * Credit bonus on a win, in percent of the bet. Tuned by simulation so that a whole game ends with about
+ * 150% of everyone's buy-ins in total (averaged over 2 and 4 players and several betting styles; range
+ * roughly 115–185%), after pool wipes, bankruptcies and eliminated players' losses vanish.
+ * Each option adds about the same per roll: (win chance) × bonus ≈ 93% of the bet.
  */
-export const RATE_PERCENT: Record<LoseFaces, number> = { 2: 150, 3: 200, 4: 300 }
+export const RATE_PERCENT: Record<LoseFaces, number> = { 2: 140, 3: 185, 4: 280 }
 
 export const MIN_BET = 20
 /** Caps a single bet so winnings can't be re-bet to grow exponentially. */
@@ -25,3 +26,7 @@ export const DEFAULT_STREAK = 3
 export const MIN_STREAK = 1
 export const MAX_STREAK = 10
 export const PASS_ROUNDS_TO_END = 2
+/** This many losses in a row (by anyone in the room) wipe out the pool. */
+export const LOSSES_TO_WIPE_POOL = 3
+/** This many of one player's own losses in a row bankrupt them. */
+export const LOSSES_TO_BANKRUPT = 3

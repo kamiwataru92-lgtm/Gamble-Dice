@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { act } from '../firebase/rooms'
-import { MAX_BET, MIN_BET, RATE_PERCENT } from '../game/config'
+import { LOSSES_TO_BANKRUPT, LOSSES_TO_WIPE_POOL, MAX_BET, MIN_BET, RATE_PERCENT } from '../game/config'
 import { winAmount } from '../game/rules'
 import type { GameState } from '../game/types'
 import { Die } from './Die'
@@ -69,15 +69,22 @@ export function GameBoard({ code, room, me }: Props) {
         <small>中央のプール</small>
         <div className="big">{room.pool.toLocaleString()} cr</div>
         <small>
-          このゲームのハズレ <strong>{faces}/6</strong>（当たれば +{RATE_PERCENT[faces]}%）／ 連続当たり {room.settings.streakToWin} 回で総取り
+          このゲームのハズレ <strong>{faces}/6</strong>（当たれば +{RATE_PERCENT[faces]}%）
         </small>
+        <div className="streaks">
+          <span className={room.currentStreak > 0 ? 'hot' : ''}>🔥 連続当たり {room.currentStreak}/{room.settings.streakToWin}<small>で総取り</small></span>
+          <span className={(room.lossStreak ?? 0) > 0 ? 'cold' : ''}>💥 連続ハズレ {room.lossStreak ?? 0}/{LOSSES_TO_WIPE_POOL}<small>でプール消滅</small></span>
+        </div>
+        <small>（部屋全体で数えます。パスでは数え直しません）</small>
       </section>
 
       {last && (
-        <section className={`card center roll ${last.win ? 'win' : 'lose'}`} key={`${last.uid}-${room.turnDeadline}-${room.currentStreak}`}>
+        <section className={`card center roll ${last.win ? 'win' : 'lose'}`} key={`${last.uid}-${room.turnDeadline}-${room.currentStreak}-${room.lossStreak}`}>
           <Die face={last.face} lose={!last.win} />
           <div>
             {lastName}：{last.win ? `当たり！ +${last.delta}` : `ハズレ… ${last.delta}`}
+            {last.bankrupt && <strong className="wipe">💀 {LOSSES_TO_BANKRUPT} 回連続ハズレで破産！</strong>}
+            {last.wipedPool > 0 && <strong className="wipe">💥 {LOSSES_TO_WIPE_POOL} 連続ハズレでプール {last.wipedPool} cr が消えた！</strong>}
             <small> （賭け {last.bet}）</small>
           </div>
         </section>
@@ -91,7 +98,7 @@ export function GameBoard({ code, room, me }: Props) {
               <li key={uid} className={`${uid === current ? 'turn' : ''} ${p.eliminated ? 'out' : ''}`}>
                 <span>
                   {uid === current && '▶ '}<PlayerName name={p.displayName} icon={p.icon} />{uid === me.uid && '（あなた）'}
-                  {uid === current && room.currentStreak > 0 && ` 🔥${room.currentStreak}`}
+                  {!p.eliminated && (p.lossStreak ?? 0) > 0 && <small className="skull"> 💀{p.lossStreak}/{LOSSES_TO_BANKRUPT}</small>}
                 </span>
                 <span>{p.eliminated ? '失格' : `${p.credits} cr`}</span>
               </li>
@@ -106,7 +113,7 @@ export function GameBoard({ code, room, me }: Props) {
 
       {myTurn && mine && !mine.eliminated && (
         <section className="card stack">
-          <h2>あなたの番{room.currentStreak > 0 && `（${room.currentStreak} 連続当たり中）`}</h2>
+          <h2>あなたの番</h2>
           <label>
             賭け額（手持ち {mine.credits} cr）
             <input type="number" min={MIN_BET} max={Math.min(MAX_BET, mine.credits)} step={10} value={bet} onChange={(e) => setBet(e.target.valueAsNumber)} />
@@ -125,7 +132,7 @@ export function GameBoard({ code, room, me }: Props) {
           </div>
         </section>
       )}
-      {mine?.eliminated && <p className="center">クレジットが {MIN_BET} 未満になったので失格です。残りのクレジットも没収されました。観戦中…</p>}
+      {mine?.eliminated && <p className="center">{(mine.lossStreak ?? 0) >= LOSSES_TO_BANKRUPT ? `${LOSSES_TO_BANKRUPT} 回連続ハズレで破産しました` : `クレジットが ${MIN_BET} 未満になったので失格です`}。クレジットは全て没収されました。観戦中…</p>}
       {!mine && <p className="center">観戦中です。ゲームが終わると次のゲームに参加できます。</p>}
       {error && <p className="error">{error}</p>}
     </div>

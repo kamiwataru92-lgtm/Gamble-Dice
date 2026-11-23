@@ -14,7 +14,7 @@ function checkBuyIn(buyIn: number, coins: number) {
 }
 
 const newPlayer = (u: User, buyIn: number): PlayerState => ({
-  uid: u.uid, displayName: u.displayName, icon: u.icon ?? null, credits: buyIn, buyIn, forfeitedTotal: 0, eliminated: false, settled: false,
+  uid: u.uid, displayName: u.displayName, icon: u.icon ?? null, credits: buyIn, buyIn, forfeitedTotal: 0, eliminated: false, settled: false, lossStreak: 0,
 })
 
 function freshGame(settings: GameSettings, round: number, unsettled: Record<string, number>): GameState {
@@ -27,6 +27,7 @@ function freshGame(settings: GameSettings, round: number, unsettled: Record<stri
     turnOrder: [],
     currentTurnIndex: 0,
     currentStreak: 0,
+    lossStreak: 0,
     rolledThisTurn: false,
     consecutivePasses: 0,
     pool: 0,
