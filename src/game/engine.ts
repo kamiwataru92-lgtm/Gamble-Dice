@@ -1,5 +1,5 @@
 import { LOSE_FACE_OPTIONS, MAX_BET, MIN_BET, MIN_PLAYERS, PASS_ROUNDS_TO_END, TURN_SECONDS } from './config'
-import { isWin, splitPool, winAmount } from './rules'
+import { isWin, winAmount } from './rules'
 import type { Action, GameState } from './types'
 
 export class GameError extends Error {
@@ -74,8 +74,12 @@ export function applyAction(state: GameState, action: Action, rng: () => number,
   p.credits -= bet
   p.forfeitedTotal += bet
   s.pool += bet
-  // Can no longer place the minimum bet: out of this game (what is left is cashed out at the end).
-  if (p.credits < MIN_BET) p.eliminated = true
+  // Can no longer place the minimum bet: out of this game, and whatever is left goes to the pool too.
+  if (p.credits < MIN_BET) {
+    s.pool += p.credits
+    p.credits = 0
+    p.eliminated = true
+  }
   s.lastRoll = { uid, bet, face, win: false, delta: -bet }
   return endTurn(s, now)
 }
@@ -100,12 +104,17 @@ function endTurn(s: GameState, now: number): GameState {
   return s
 }
 
+/**
+ * End without a streak winner: each surviving player gets back what they lost to the pool; eliminated
+ * players get nothing, and whatever they lost disappears.
+ */
 function finishSplit(s: GameState, reason: 'allPass' | 'lastOne'): GameState {
-  const payouts = splitPool(
-    s.pool,
-    s.turnOrder.map((u) => ({ uid: u, amount: s.players[u].forfeitedTotal })),
-  )
-  for (const u of s.turnOrder) s.players[u].credits += payouts[u]
+  const payouts: Record<string, number> = {}
+  for (const u of s.turnOrder) {
+    const p = s.players[u]
+    payouts[u] = p.eliminated ? 0 : p.forfeitedTotal
+    p.credits += payouts[u]
+  }
   s.pool = 0
   s.status = 'finished'
   s.result = { reason, payouts }
