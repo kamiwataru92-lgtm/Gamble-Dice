@@ -9,6 +9,7 @@ import { userRef, type UserDoc } from './wallet'
 interface User {
   uid: string
   displayName: string
+  icon?: string | null
 }
 
 const roomRef = (code: string) => doc(db, 'rooms', code)

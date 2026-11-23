@@ -4,6 +4,8 @@ export type LoseFaces = 1 | 2 | 3 | 4 | 5
 export interface PlayerState {
   uid: string
   displayName: string
+  /** Gacha item id shown next to the name (set at join time). */
+  icon: string | null
   credits: number
   buyIn: number
   forfeitedTotal: number

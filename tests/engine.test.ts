@@ -9,7 +9,7 @@ const WIN = face(6)
 const LOSE = face(1)
 
 function player(uid: string, credits = 100): PlayerState {
-  return { uid, displayName: uid, credits, buyIn: credits, forfeitedTotal: 0, eliminated: false, settled: false }
+  return { uid, displayName: uid, icon: null, credits, buyIn: credits, forfeitedTotal: 0, eliminated: false, settled: false }
 }
 
 function playing(overrides: Partial<GameState> = {}, uids = ['a', 'b', 'c']): GameState {

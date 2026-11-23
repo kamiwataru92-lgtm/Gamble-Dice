@@ -3,7 +3,7 @@ import { GameError } from '../src/game/engine'
 import { addPlayer, createState, removePlayer, settlePlayer } from '../src/game/lobby'
 import type { GameState } from '../src/game/types'
 
-const host = { uid: 'h', displayName: 'Host' }
+const host = { uid: 'h', displayName: 'Host', icon: 'moai' }
 const settings = { forfeitMode: 'bet' as const, streakToWin: 3 }
 
 function expectError(fn: () => unknown, code: string) {
@@ -23,7 +23,7 @@ describe('createState', () => {
     expect(s.status).toBe('waiting')
     expect(s.hostUid).toBe('h')
     expect(s.players.h).toEqual({
-      uid: 'h', displayName: 'Host', credits: 80, buyIn: 80, forfeitedTotal: 0, eliminated: false, settled: false,
+      uid: 'h', displayName: 'Host', icon: 'moai', credits: 80, buyIn: 80, forfeitedTotal: 0, eliminated: false, settled: false,
     })
   })
   it.each([0, -1, 1.5, 101])('rejects buy-in %s', (buyIn) => {
@@ -45,6 +45,10 @@ describe('addPlayer', () => {
   it('adds a bought-in player', () => {
     const s = addPlayer(room(), { uid: 'p', displayName: 'P' }, 50, 60)
     expect(s.players.p.credits).toBe(50)
+    expect(s.players.p.icon).toBeNull()
+  })
+  it('records the joining player\'s icon', () => {
+    expect(addPlayer(room(), { uid: 'p', displayName: 'P', icon: 'skull' }, 50, 60).players.p.icon).toBe('skull')
   })
   it('rejects buying in more than you have', () => {
     expectError(() => addPlayer(room(), { uid: 'p', displayName: 'P' }, 61, 60), 'insufficient_coins')

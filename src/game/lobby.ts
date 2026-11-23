@@ -5,6 +5,7 @@ import type { GameSettings, GameState } from './types'
 interface User {
   uid: string
   displayName: string
+  icon?: string | null
 }
 
 function checkBuyIn(buyIn: number, coins: number) {
@@ -13,7 +14,7 @@ function checkBuyIn(buyIn: number, coins: number) {
 }
 
 const newPlayer = (u: User, buyIn: number) => ({
-  uid: u.uid, displayName: u.displayName, credits: buyIn, buyIn, forfeitedTotal: 0, eliminated: false, settled: false,
+  uid: u.uid, displayName: u.displayName, icon: u.icon ?? null, credits: buyIn, buyIn, forfeitedTotal: 0, eliminated: false, settled: false,
 })
 
 export function createState(host: User, settings: GameSettings, buyIn: number, coins: number): GameState {
