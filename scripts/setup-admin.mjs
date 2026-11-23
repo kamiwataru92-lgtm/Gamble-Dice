@@ -1,5 +1,5 @@
 // Creates or updates the admin account from environment variables. Run by the deploy workflow.
-//   ADMIN_EMAIL, ADMIN_PASSWORD          the admin's login (GitHub secrets)
+//   ADMIN_PASSWORD                       the admin's password (GitHub secret)
 //   GOOGLE_APPLICATION_CREDENTIALS       service account key file (production)
 //   FIREBASE_AUTH_EMULATOR_HOST          set to run against the Auth emulator instead
 //   PROJECT_ID                           defaults to the project in .firebaserc
@@ -7,14 +7,15 @@ import { readFileSync } from 'node:fs'
 import { initializeApp, applicationDefault } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 
-const ADMIN_UID = 'gamble-dice-admin' // keep in sync with src/admin/config.ts and firestore.rules
-const email = process.env.ADMIN_EMAIL?.trim()
+// Keep in sync with src/admin/config.ts (and the UID with firestore.rules).
+const ADMIN_UID = 'gamble-dice-admin'
+const email = 'admin@gamble-dice.invalid'
 const password = process.env.ADMIN_PASSWORD
 const projectId = process.env.PROJECT_ID || JSON.parse(readFileSync('.firebaserc', 'utf8')).projects.default
 const emulator = Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST)
 
-if (!email || !password) {
-  console.log('ADMIN_EMAIL / ADMIN_PASSWORD not set; skipping admin setup.')
+if (!password) {
+  console.log('ADMIN_PASSWORD not set; skipping admin setup.')
   process.exit(0)
 }
 if (password.length < 8) {
