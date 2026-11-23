@@ -17,7 +17,9 @@ const app = initializeApp({
 })
 
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+/** Firestore database id. This project's database was created as "default" (not "(default)"). */
+export const databaseId = import.meta.env.VITE_FIRESTORE_DATABASE || '(default)'
+export const db = getFirestore(app, databaseId)
 
 /** Local development against `firebase emulators:start` (VITE_USE_EMULATOR=1). */
 export const usingEmulator = import.meta.env.VITE_USE_EMULATOR === '1'
