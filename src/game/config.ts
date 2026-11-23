@@ -4,11 +4,11 @@ import type { LoseFaces } from './types'
 export const LOSE_FACE_OPTIONS: LoseFaces[] = [2, 3, 4]
 
 /**
- * Credit increase on a win, in percent of the bet, set so one roll returns about 105% on average:
- * (win chance) × (100 + percent) ≈ 105 (2/6: 105.3%, 3/6 and 4/6: 105%).
- * Integers to avoid floating-point rounding (100 × 2.3 = 229.99…).
+ * Credit bonus on a win, in percent of the bet. A lost bet is not destroyed: it goes to the pool and comes
+ * back to some player (streak winner or split), so only wins create new credits. Across all players one
+ * roll returns 100% + (win chance) × bonus ≈ 105% (2/6: 104.7%, 3/6 and 4/6: 105%).
  */
-export const RATE_PERCENT: Record<LoseFaces, number> = { 2: 58, 3: 110, 4: 215 }
+export const RATE_PERCENT: Record<LoseFaces, number> = { 2: 7, 3: 10, 4: 15 }
 
 export const MIN_BET = 20
 /** Caps a single bet so winnings can't be re-bet to grow exponentially. */

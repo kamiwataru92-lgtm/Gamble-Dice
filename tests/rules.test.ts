@@ -3,18 +3,20 @@ import { LOSE_FACE_OPTIONS, RATE_PERCENT } from '../src/game/config'
 import { isWin, splitPool, winAmount } from '../src/game/rules'
 
 describe('winAmount', () => {
-  it('pays so that a roll returns about 105% on average, floored', () => {
-    expect(winAmount(100, 2)).toBe(58)
-    expect(winAmount(100, 3)).toBe(110)
-    expect(winAmount(100, 4)).toBe(215)
-    expect(winAmount(25, 2)).toBe(14) // floor(14.5)
+  it('pays a small bonus on a win, floored', () => {
+    expect(winAmount(100, 2)).toBe(7)
+    expect(winAmount(100, 3)).toBe(10)
+    expect(winAmount(100, 4)).toBe(15)
+    expect(winAmount(50, 2)).toBe(3) // floor(3.5)
   })
-  it('keeps the expected return slightly above 100% (about 105%) for every option', () => {
+  it('creates about 5% per roll across all players, counting the pool', () => {
+    // A lost bet goes to the pool and comes back to some player, so only wins create credits:
+    // total return per roll = 100% + (win chance) × (bonus %).
     for (const f of LOSE_FACE_OPTIONS) {
       const winChance = (6 - f) / 6
-      const expected = winChance * (100 + RATE_PERCENT[f])
-      expect(expected).toBeGreaterThan(104.5)
-      expect(expected).toBeLessThan(105.5)
+      const total = 100 + winChance * RATE_PERCENT[f]
+      expect(total).toBeGreaterThan(104.5)
+      expect(total).toBeLessThanOrEqual(105)
     }
   })
 })
