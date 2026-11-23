@@ -90,3 +90,6 @@ button.link { border: 0; padding: 0 0 0 8px; color: var(--muted); font-size: 0.8
 .gacha-cell[class*='r-'], .collection-cell[class*='r-'] { border-color: var(--r); }
 .gacha-cell.r-superRare, .gacha-cell.r-epic, .gacha-cell.r-legendary, .gacha-cell.r-mythic { box-shadow: 0 0 12px var(--r); }
 button.primary small { color: inherit; opacity: 0.75; }
+select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 1rem; width: 100%; }
+.ok { color: var(--win); }
+input[type='email'], input[type='password'] { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 1rem; width: 100%; }
