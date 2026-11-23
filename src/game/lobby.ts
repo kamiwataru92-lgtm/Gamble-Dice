@@ -27,6 +27,7 @@ function freshGame(settings: GameSettings, round: number, unsettled: Record<stri
     turnOrder: [],
     currentTurnIndex: 0,
     currentStreak: 0,
+    lossStreak: 0,
     rolledThisTurn: false,
     consecutivePasses: 0,
     pool: 0,

@@ -1,4 +1,4 @@
-import { LOSE_FACE_OPTIONS, MAX_BET, MIN_BET, MIN_PLAYERS, PASS_ROUNDS_TO_END, TURN_SECONDS } from './config'
+import { LOSE_FACE_OPTIONS, LOSSES_TO_WIPE_POOL, MAX_BET, MIN_BET, MIN_PLAYERS, PASS_ROUNDS_TO_END, TURN_SECONDS } from './config'
 import { isWin, winAmount } from './rules'
 import type { Action, GameState } from './types'
 
@@ -28,6 +28,7 @@ export function startGame(state: GameState, rng: () => number, now: number): Gam
     turnOrder: uids,
     currentTurnIndex: 0,
     currentStreak: 0,
+    lossStreak: 0,
     rolledThisTurn: false,
     consecutivePasses: 0,
     turnDeadline: deadline(now),
@@ -57,8 +58,10 @@ export function applyAction(state: GameState, action: Action, rng: () => number,
   if (isWin(face, loseFaces)) {
     const delta = winAmount(bet, loseFaces)
     p.credits += delta
-    s.lastRoll = { uid, bet, face, win: true, delta }
+    s.lastRoll = { uid, bet, face, win: true, delta, wipedPool: 0 }
+    // Streaks count every roll in the room, whoever rolls; passes don't break them.
     s.currentStreak += 1
+    s.lossStreak = 0
     s.rolledThisTurn = true
     s.turnDeadline = deadline(now)
     if (s.currentStreak >= s.settings.streakToWin) {
@@ -80,7 +83,17 @@ export function applyAction(state: GameState, action: Action, rng: () => number,
     p.credits = 0
     p.eliminated = true
   }
-  s.lastRoll = { uid, bet, face, win: false, delta: -bet }
+  s.currentStreak = 0
+  s.lossStreak = (s.lossStreak ?? 0) + 1
+  let wipedPool = 0
+  if (s.lossStreak >= LOSSES_TO_WIPE_POOL) {
+    // Too many losses in a row: the pool is gone, and nothing in it can be refunded later.
+    wipedPool = s.pool
+    s.pool = 0
+    s.lossStreak = 0
+    for (const q of Object.values(s.players)) q.forfeitedTotal = 0
+  }
+  s.lastRoll = { uid, bet, face, win: false, delta: -bet, wipedPool }
   return endTurn(s, now)
 }
 
@@ -90,7 +103,6 @@ function pass(s: GameState, now: number): GameState {
 }
 
 function endTurn(s: GameState, now: number): GameState {
-  s.currentStreak = 0
   s.rolledThisTurn = false
   const active = s.turnOrder.filter((u) => !s.players[u].eliminated)
   // Only one player (or nobody) left: stop, so a lone survivor can't keep rolling.

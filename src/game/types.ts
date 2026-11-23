@@ -23,6 +23,8 @@ export interface LastRoll {
   win: boolean
   /** Credits gained (positive) or forfeited (negative). */
   delta: number
+  /** Pool credits wiped out by this roll (losses in a row), else 0. */
+  wipedPool: number
 }
 
 export interface GameResult {
@@ -42,7 +44,10 @@ export interface GameState {
   players: Record<string, PlayerState>
   turnOrder: string[]
   currentTurnIndex: number
+  /** Wins in a row by anyone in the room (passes don't break it). */
   currentStreak: number
+  /** Losses in a row by anyone in the room; at LOSSES_TO_WIPE_POOL the pool is wiped. */
+  lossStreak: number
   rolledThisTurn: boolean
   consecutivePasses: number
   pool: number

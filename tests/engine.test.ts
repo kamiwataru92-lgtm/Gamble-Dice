@@ -22,6 +22,7 @@ function playing(overrides: Partial<GameState> = {}, uids = ['a', 'b', 'c'], los
     turnOrder: uids,
     currentTurnIndex: 0,
     currentStreak: 0,
+    lossStreak: 0,
     rolledThisTurn: false,
     consecutivePasses: 0,
     pool: 0,
@@ -72,7 +73,7 @@ describe('rolling', () => {
     expect(s.players.a.credits).toBe(200)
     expect(current(s)).toBe('a')
     expect(s.currentStreak).toBe(1)
-    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, face: 6, win: true, delta: 100 })
+    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, face: 6, win: true, delta: 100, wipedPool: 0 })
   })
   it('uses the game\'s odds: face 3 loses at 3/6 but wins at 2/6', () => {
     expect(applyAction(playing({}, undefined, 3), roll('a'), face(3), NOW).lastRoll?.win).toBe(false)
@@ -106,11 +107,65 @@ describe('rolling', () => {
     expect(s.result).toEqual({ reason: 'streak', winnerUid: 'a', payouts: { a: 200, b: 0, c: 0 } })
     expect(s.players.a.credits).toBe(100 + 40 + 40 + 40 + 200)
   })
-  it('resets the streak when the player passes', () => {
+  it('keeps the room-wide win streak when a player passes', () => {
     let s = applyAction(playing(), roll('a'), WIN, NOW)
     s = applyAction(s, pass('a'), WIN, NOW)
-    expect(s.currentStreak).toBe(0)
+    expect(s.currentStreak).toBe(1)
     expect(current(s)).toBe('b')
+  })
+  it('counts wins across players: whoever makes the 3rd win in a row takes the pool', () => {
+    let s = playing({ pool: 200 })
+    s = applyAction(s, roll('a'), WIN, NOW)
+    s = applyAction(s, pass('a'), WIN, NOW)
+    s = applyAction(s, roll('b'), WIN, NOW)
+    expect(s.status).toBe('playing')
+    s = applyAction(s, roll('b'), WIN, NOW)
+    expect(s.status).toBe('finished')
+    expect(s.result).toEqual({ reason: 'streak', winnerUid: 'b', payouts: { a: 0, b: 200, c: 0 } })
+  })
+  it('resets the win streak on any loss and counts losses instead', () => {
+    let s = applyAction(playing(), roll('a'), WIN, NOW)
+    s = applyAction(s, pass('a'), WIN, NOW)
+    s = applyAction(s, roll('b'), LOSE, NOW)
+    expect(s.currentStreak).toBe(0)
+    expect(s.lossStreak).toBe(1)
+  })
+})
+
+describe('pool wipe', () => {
+  it('wipes the pool after 3 losses in a row by anyone, and the game goes on', () => {
+    let s = playing({ pool: 50 })
+    s = applyAction(s, roll('a', 20), LOSE, NOW)
+    s = applyAction(s, roll('b', 30), LOSE, NOW)
+    expect(s.lossStreak).toBe(2)
+    expect(s.pool).toBe(100)
+    s = applyAction(s, roll('c', 40), LOSE, NOW)
+    expect(s.status).toBe('playing')
+    expect(s.pool).toBe(0)
+    expect(s.lossStreak).toBe(0)
+    expect(s.lastRoll).toMatchObject({ uid: 'c', win: false, delta: -40, wipedPool: 140 })
+    expect(Object.values(s.players).map((p) => p.forfeitedTotal)).toEqual([0, 0, 0])
+    expect(current(s)).toBe('a')
+  })
+  it('resets the loss count on any win', () => {
+    let s = applyAction(playing(), roll('a', 20), LOSE, NOW)
+    s = applyAction(s, roll('b', 20), LOSE, NOW)
+    s = applyAction(s, roll('c', 20), WIN, NOW)
+    expect(s.lossStreak).toBe(0)
+    expect(s.pool).toBe(40)
+  })
+  it('does not count passes either way', () => {
+    let s = applyAction(playing(), roll('a', 20), LOSE, NOW)
+    s = applyAction(s, pass('b'), WIN, NOW)
+    s = applyAction(s, roll('c', 20), LOSE, NOW)
+    expect(s.lossStreak).toBe(2)
+  })
+  it('refunds nothing that was wiped when the game later ends by passing', () => {
+    let s = playing()
+    for (const u of ['a', 'b', 'c']) s = applyAction(s, roll(u, 20), LOSE, NOW)
+    for (let i = 0; i < 6; i++) s = applyAction(s, pass(current(s)), WIN, NOW)
+    expect(s.result).toEqual({ reason: 'allPass', payouts: { a: 0, b: 0, c: 0 } })
+    expect(s.players).toMatchObject({ a: { credits: 80 }, b: { credits: 80 }, c: { credits: 80 } })
   })
 })
 
@@ -156,14 +211,19 @@ describe('passing', () => {
   it('ends when only one player is left: survivors get back what they lost, the eliminated get nothing', () => {
     let s = playing({}, ['a', 'b', 'c'])
     s = applyAction(s, roll('a', 30), LOSE, NOW) // a: 70, lost 30
-    s = applyAction(s, roll('b', 90), LOSE, NOW) // b: 10 left → eliminated, pool 30 + 100
-    s = applyAction(s, roll('c', 85), LOSE, NOW) // c: 15 left → eliminated, a is alone
+    s = applyAction(s, roll('b', 90), LOSE, NOW) // b: 10 left → eliminated
+    s = applyAction(s, roll('c', 20), WIN, NOW) // c: 140 (breaks the loss streak)
+    s = applyAction(s, pass('c'), WIN, NOW)
+    s = applyAction(s, pass('a'), WIN, NOW)
+    s = applyAction(s, roll('c', 100), LOSE, NOW) // c: 40 left, still in
+    s = applyAction(s, roll('a', 50), LOSE, NOW) // a: 20 left, lost 80 in total
+    s = applyAction(s, roll('c', 30), WIN, NOW) // c: 100
+    s = applyAction(s, pass('c'), WIN, NOW)
+    s = applyAction(s, roll('a', 20), LOSE, NOW) // a: 0 → eliminated, c is alone
     expect(s.status).toBe('finished')
-    expect(s.pool).toBe(0)
-    expect(s.result).toEqual({ reason: 'lastOne', payouts: { a: 30, b: 0, c: 0 } })
-    expect(s.players.a.credits).toBe(100)
-    expect(s.players.b.credits).toBe(0)
-    expect(s.players.c.credits).toBe(0)
+    expect(s.result).toEqual({ reason: 'lastOne', payouts: { a: 0, b: 0, c: 100 } })
+    expect(s.players.c.credits).toBe(200)
+    expect(s.players.a.credits).toBe(0)
   })
   it('keeps going while two or more players are left', () => {
     const s = applyAction(playing(), roll('a', 85), LOSE, NOW)
