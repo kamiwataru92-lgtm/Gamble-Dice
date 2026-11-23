@@ -35,6 +35,12 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
         run: npx --yes firebase-tools@13.29.1 deploy --only hosting,firestore --non-interactive
+      - name: Create or update the admin account
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: node scripts/setup-admin.mjs
       - name: Remove key
         if: always()
         run: rm -f "$RUNNER_TEMP/sa.json"

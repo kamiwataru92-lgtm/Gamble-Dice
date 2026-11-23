@@ -3,11 +3,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    // 管理者（GitHub の ADMIN_EMAIL / ADMIN_PASSWORD から scripts/setup-admin.mjs が作るアカウント）。src/admin/config.ts と同じ UID
+    function isAdmin() { return signedIn() && request.auth.uid == 'gamble-dice-admin'; }
 
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid
         && (request.method == 'get' || request.method == 'list'
             || (request.resource.data.coins is int && request.resource.data.coins >= 0));
+      // 管理者は全員の一覧を見て、コインと所持品を変更できる（ユーザーの作成・削除はしない）
+      allow read: if isAdmin();
+      allow update: if isAdmin() && request.resource.data.coins is int && request.resource.data.coins >= 0;
     }
 
     match /rooms/{code} {

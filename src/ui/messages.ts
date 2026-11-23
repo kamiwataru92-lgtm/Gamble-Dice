@@ -21,6 +21,9 @@ const MESSAGES: Record<string, string> = {
   host_cannot_leave: 'ホストは部屋を解散してください',
   not_owned: 'そのアイテムを持っていません',
   invalid_name: '名前は 1〜12 文字で入力してください',
+  invalid_amount: '数は 1 以上の整数で入力してください',
+  negative_coins: 'コインが 0 未満になるので減らせません',
+  unknown_item: 'そのアイテムはありません',
   code_collision: '部屋コードを作れませんでした。もう一度お試しください',
 }
 
