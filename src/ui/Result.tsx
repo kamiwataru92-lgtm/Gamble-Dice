@@ -40,7 +40,7 @@ export function Result({ code, room, me, coins, onLeave }: Props) {
     <div className="stack">
       <section className="card center stack">
         <h2>{title}</h2>
-        {(r?.reason === 'allPass' || r?.reason === 'lastOne') && <small>プールは没収された額の割合で山分けされました</small>}
+        {(r?.reason === 'allPass' || r?.reason === 'lastOne') && <small>生き残った人には、自分が没収された分がプールから戻りました。失格した人のクレジットは失われました</small>}
         {bgm && blocked && <button onClick={() => playBgm(bgm).then((ok) => setBlocked(!ok))}>♪ 勝利 BGM を再生</button>}
       </section>
       <section className="card">

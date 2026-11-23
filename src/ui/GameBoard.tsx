@@ -125,7 +125,7 @@ export function GameBoard({ code, room, me }: Props) {
           </div>
         </section>
       )}
-      {mine?.eliminated && <p className="center">クレジットが {MIN_BET} 未満になったので失格です。観戦中…（残りはゲーム終了時にコインに戻ります）</p>}
+      {mine?.eliminated && <p className="center">クレジットが {MIN_BET} 未満になったので失格です。残りのクレジットも没収されました。観戦中…</p>}
       {!mine && <p className="center">観戦中です。ゲームが終わると次のゲームに参加できます。</p>}
       {error && <p className="error">{error}</p>}
     </div>
