@@ -107,3 +107,4 @@ button.danger { background: var(--lose); border-color: var(--lose); color: #fff;
 .streaks .hot { border-color: var(--accent); color: var(--accent); }
 .streaks .cold { border-color: var(--lose); color: var(--lose); }
 .wipe { display: block; color: var(--lose); margin-top: 4px; }
+.skull { color: var(--lose); }

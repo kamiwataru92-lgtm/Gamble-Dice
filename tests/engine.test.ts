@@ -9,7 +9,7 @@ const WIN = face(6)
 const LOSE = face(1)
 
 function player(uid: string, credits = 100): PlayerState {
-  return { uid, displayName: uid, icon: null, credits, buyIn: credits, forfeitedTotal: 0, eliminated: false, settled: false }
+  return { uid, displayName: uid, icon: null, credits, buyIn: credits, forfeitedTotal: 0, eliminated: false, settled: false, lossStreak: 0 }
 }
 
 function playing(overrides: Partial<GameState> = {}, uids = ['a', 'b', 'c'], loseFaces: LoseFaces = 3): GameState {
@@ -73,7 +73,7 @@ describe('rolling', () => {
     expect(s.players.a.credits).toBe(200)
     expect(current(s)).toBe('a')
     expect(s.currentStreak).toBe(1)
-    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, face: 6, win: true, delta: 100, wipedPool: 0 })
+    expect(s.lastRoll).toEqual({ uid: 'a', bet: 50, face: 6, win: true, delta: 100, wipedPool: 0, bankrupt: false })
   })
   it('uses the game\'s odds: face 3 loses at 3/6 but wins at 2/6', () => {
     expect(applyAction(playing({}, undefined, 3), roll('a'), face(3), NOW).lastRoll?.win).toBe(false)
@@ -129,6 +129,45 @@ describe('rolling', () => {
     s = applyAction(s, roll('b'), LOSE, NOW)
     expect(s.currentStreak).toBe(0)
     expect(s.lossStreak).toBe(1)
+  })
+})
+
+describe('bankruptcy', () => {
+  /** a loses on each of its turns; b wins in between so the room-wide loss streak never reaches 3. */
+  function aLosesThreeTurns() {
+    let s = playing()
+    for (let i = 0; i < 3; i++) {
+      s = applyAction(s, roll('a', 20), LOSE, NOW)
+      if (i === 2) break
+      s = applyAction(s, roll('b', 20), WIN, NOW)
+      s = applyAction(s, pass('b'), WIN, NOW)
+      s = applyAction(s, pass('c'), WIN, NOW)
+    }
+    return s
+  }
+  it('bankrupts a player after 3 of their own losses in a row: out, and everything they had goes to the pool', () => {
+    const s = aLosesThreeTurns()
+    expect(s.players.a).toMatchObject({ eliminated: true, credits: 0, lossStreak: 3 })
+    expect(s.pool).toBe(100)
+    expect(s.lastRoll).toMatchObject({ uid: 'a', win: false, bankrupt: true })
+    expect(s.status).toBe('playing')
+  })
+  it('counts only that player\'s rolls and resets on their win', () => {
+    let s = playing()
+    s = applyAction(s, roll('a', 20), LOSE, NOW)
+    s = applyAction(s, roll('b', 20), WIN, NOW)
+    expect(s.players.a.lossStreak).toBe(1)
+    expect(s.players.b.lossStreak).toBe(0)
+    s = applyAction(s, pass('b'), WIN, NOW)
+    s = applyAction(s, pass('c'), WIN, NOW)
+    s = applyAction(s, roll('a', 20), WIN, NOW)
+    expect(s.players.a.lossStreak).toBe(0)
+  })
+  it('is not reset by passing', () => {
+    let s = applyAction(playing(), roll('a', 20), LOSE, NOW)
+    for (const u of ['b', 'c']) s = applyAction(s, pass(u), WIN, NOW)
+    s = applyAction(s, pass('a'), WIN, NOW)
+    expect(s.players.a.lossStreak).toBe(1)
   })
 })
 

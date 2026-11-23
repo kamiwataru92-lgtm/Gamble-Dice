@@ -27,3 +27,5 @@ export const MAX_STREAK = 10
 export const PASS_ROUNDS_TO_END = 2
 /** This many losses in a row (by anyone in the room) wipe out the pool. */
 export const LOSSES_TO_WIPE_POOL = 3
+/** This many of one player's own losses in a row bankrupt them. */
+export const LOSSES_TO_BANKRUPT = 3
