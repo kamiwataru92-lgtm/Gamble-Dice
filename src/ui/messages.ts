@@ -2,7 +2,7 @@ import { GameError } from '../game/engine'
 
 const MESSAGES: Record<string, string> = {
   not_your_turn: 'あなたの番ではありません',
-  invalid_bet: '賭け額は 20 以上、手持ちクレジット以下の整数にしてください',
+  invalid_bet: '賭け額は 20〜100、かつ手持ちクレジット以下の整数にしてください',
   not_playing: 'ゲームは進行中ではありません',
   not_expired: 'まだ持ち時間が残っています',
   not_enough_players: '2 人以上そろうと開始できます',

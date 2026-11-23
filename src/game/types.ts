@@ -26,7 +26,7 @@ export interface LastRoll {
 }
 
 export interface GameResult {
-  reason: 'streak' | 'allPass'
+  reason: 'streak' | 'allPass' | 'lastOne'
   winnerUid?: string
   /** Pool credits paid to each player at the end. */
   payouts: Record<string, number>

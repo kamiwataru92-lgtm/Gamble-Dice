@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { act } from '../firebase/rooms'
-import { MIN_BET, RATE_PERCENT } from '../game/config'
+import { MAX_BET, MIN_BET, RATE_PERCENT } from '../game/config'
 import { winAmount } from '../game/rules'
 import type { GameState } from '../game/types'
 import { Die } from './Die'
@@ -109,10 +109,10 @@ export function GameBoard({ code, room, me }: Props) {
           <h2>あなたの番{room.currentStreak > 0 && `（${room.currentStreak} 連続当たり中）`}</h2>
           <label>
             賭け額（手持ち {mine.credits} cr）
-            <input type="number" min={MIN_BET} max={mine.credits} step={10} value={bet} onChange={(e) => setBet(e.target.valueAsNumber)} />
+            <input type="number" min={MIN_BET} max={Math.min(MAX_BET, mine.credits)} step={10} value={bet} onChange={(e) => setBet(e.target.valueAsNumber)} />
           </label>
           <small>
-            最低 {MIN_BET} cr ／ 当たれば +{Number.isFinite(bet) ? winAmount(bet, faces) : 0} cr ／ ハズレたら {bet} cr 没収
+            {MIN_BET}〜{MAX_BET} cr ／ 当たれば +{Number.isFinite(bet) ? winAmount(bet, faces) : 0} cr ／ ハズレたら {bet} cr 没収
           </small>
           <div className="row">
             <button className="primary grow" disabled={busy}

@@ -3,16 +3,18 @@ import { LOSE_FACE_OPTIONS, RATE_PERCENT } from '../src/game/config'
 import { isWin, splitPool, winAmount } from '../src/game/rules'
 
 describe('winAmount', () => {
-  it('pays so that a roll returns about 110% on average, floored', () => {
-    expect(winAmount(100, 2)).toBe(65)
-    expect(winAmount(100, 3)).toBe(120)
-    expect(winAmount(100, 4)).toBe(230)
-    expect(winAmount(25, 2)).toBe(16) // floor(16.25)
+  it('pays so that a roll returns about 105% on average, floored', () => {
+    expect(winAmount(100, 2)).toBe(58)
+    expect(winAmount(100, 3)).toBe(110)
+    expect(winAmount(100, 4)).toBe(215)
+    expect(winAmount(25, 2)).toBe(14) // floor(14.5)
   })
-  it('keeps the expected return at 110% for every option', () => {
+  it('keeps the expected return slightly above 100% (about 105%) for every option', () => {
     for (const f of LOSE_FACE_OPTIONS) {
       const winChance = (6 - f) / 6
-      expect(winChance * (100 + RATE_PERCENT[f])).toBeCloseTo(110, 5)
+      const expected = winChance * (100 + RATE_PERCENT[f])
+      expect(expected).toBeGreaterThan(104.5)
+      expect(expected).toBeLessThan(105.5)
     }
   })
 })
