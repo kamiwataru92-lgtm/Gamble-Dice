@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createRoom, joinRoom } from '../firebase/rooms'
-import { DEFAULT_STREAK, MAX_STREAK, MIN_STREAK } from '../game/config'
+import { DEFAULT_STREAK, MAX_BUY_IN, MAX_STREAK, MIN_STREAK } from '../game/config'
 import type { ForfeitMode } from '../game/types'
 import { errorMessage } from './messages'
 
@@ -35,8 +35,8 @@ export function Lobby({ me, coins, onEnter }: Props) {
       <section className="card stack">
         <h2>持ち込むクレジット</h2>
         <label>
-          コインから換えるクレジット（あとから追加できません）
-          <input type="number" min={1} max={coins} value={buyIn} onChange={(e) => setBuyIn(e.target.valueAsNumber)} />
+          コインから換えるクレジット（最大 {MAX_BUY_IN}、あとから追加できません）
+          <input type="number" min={1} max={Math.min(MAX_BUY_IN, coins)} value={buyIn} onChange={(e) => setBuyIn(e.target.valueAsNumber)} />
         </label>
         <small>所持コイン：{coins.toLocaleString()}（1 コイン = 1 クレジット）</small>
       </section>

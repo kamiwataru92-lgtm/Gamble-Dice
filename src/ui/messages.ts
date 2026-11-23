@@ -8,7 +8,7 @@ const MESSAGES: Record<string, string> = {
   not_expired: 'まだ持ち時間が残っています',
   not_enough_players: '2 人以上そろうと開始できます',
   already_started: 'このゲームはもう始まっています',
-  invalid_buyin: '持ち込み額は 1 以上の整数にしてください',
+  invalid_buyin: '持ち込み額は 1〜100 の整数にしてください',
   insufficient_coins: 'コインが足りません',
   room_full: 'この部屋は満員です（最大 6 人）',
   already_joined: 'すでにこの部屋に参加しています',

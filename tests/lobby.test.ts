@@ -19,15 +19,21 @@ function expectError(fn: () => unknown, code: string) {
 
 describe('createState', () => {
   it('creates a waiting room with the host bought in', () => {
-    const s = createState(host, settings, 300, 1000)
+    const s = createState(host, settings, 80, 1000)
     expect(s.status).toBe('waiting')
     expect(s.hostUid).toBe('h')
     expect(s.players.h).toEqual({
-      uid: 'h', displayName: 'Host', credits: 300, buyIn: 300, forfeitedTotal: 0, eliminated: false, settled: false,
+      uid: 'h', displayName: 'Host', credits: 80, buyIn: 80, forfeitedTotal: 0, eliminated: false, settled: false,
     })
   })
-  it.each([0, -1, 1.5, 1001])('rejects buy-in %s with 1000 coins', (buyIn) => {
-    expectError(() => createState(host, settings, buyIn, 1000), buyIn > 1000 ? 'insufficient_coins' : 'invalid_buyin')
+  it.each([0, -1, 1.5, 101])('rejects buy-in %s', (buyIn) => {
+    expectError(() => createState(host, settings, buyIn, 1000), 'invalid_buyin')
+  })
+  it('accepts the maximum buy-in of 100', () => {
+    expect(createState(host, settings, 100, 1000).players.h.credits).toBe(100)
+  })
+  it('rejects buying in more coins than you have', () => {
+    expectError(() => createState(host, settings, 50, 40), 'insufficient_coins')
   })
   it.each([0, 11, 2.5])('rejects streak %s', (streakToWin) => {
     expectError(() => createState(host, { ...settings, streakToWin }, 100, 1000), 'invalid_settings')
@@ -42,6 +48,9 @@ describe('addPlayer', () => {
   })
   it('rejects buying in more than you have', () => {
     expectError(() => addPlayer(room(), { uid: 'p', displayName: 'P' }, 61, 60), 'insufficient_coins')
+  })
+  it('rejects a buy-in over 100 when joining', () => {
+    expectError(() => addPlayer(room(), { uid: 'p', displayName: 'P' }, 101, 500), 'invalid_buyin')
   })
   it('rejects a full room', () => {
     let s = room()

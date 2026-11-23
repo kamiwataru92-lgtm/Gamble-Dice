@@ -4,6 +4,8 @@ import type { LoseFaces } from './types'
 export const RATES: Record<LoseFaces, number> = { 1: 0.1, 2: 0.2, 3: 0.4, 4: 0.6, 5: 0.9 }
 
 export const INITIAL_COINS = 1000
+/** Max credits a player can bring into one game (inflation control). */
+export const MAX_BUY_IN = 100
 export const MIN_PLAYERS = 2
 export const MAX_PLAYERS = 6
 export const TURN_SECONDS = 60

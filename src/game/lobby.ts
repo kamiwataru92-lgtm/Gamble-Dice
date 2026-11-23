@@ -1,4 +1,4 @@
-import { MAX_PLAYERS, MAX_STREAK, MIN_STREAK } from './config'
+import { MAX_BUY_IN, MAX_PLAYERS, MAX_STREAK, MIN_STREAK } from './config'
 import { GameError } from './engine'
 import type { GameSettings, GameState } from './types'
 
@@ -8,7 +8,7 @@ interface User {
 }
 
 function checkBuyIn(buyIn: number, coins: number) {
-  if (!Number.isInteger(buyIn) || buyIn < 1) throw new GameError('invalid_buyin')
+  if (!Number.isInteger(buyIn) || buyIn < 1 || buyIn > MAX_BUY_IN) throw new GameError('invalid_buyin')
   if (buyIn > coins) throw new GameError('insufficient_coins')
 }
 
