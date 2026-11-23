@@ -3,8 +3,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    // 管理者（Firebase コンソールで作ったメール / パスワードのアカウント）。src/admin/config.ts と同じ UID にする
-    function isAdmin() { return signedIn() && request.auth.uid == 'REPLACE_WITH_ADMIN_UID'; }
+    // 管理者（GitHub の ADMIN_EMAIL / ADMIN_PASSWORD から scripts/setup-admin.mjs が作るアカウント）。src/admin/config.ts と同じ UID
+    function isAdmin() { return signedIn() && request.auth.uid == 'gamble-dice-admin'; }
 
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid

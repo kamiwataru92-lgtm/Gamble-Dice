@@ -1,5 +1,5 @@
 /**
- * The admin's Firebase Auth UID (an email/password account created in the Firebase console).
- * Must match `isAdmin()` in firestore.rules.
+ * The admin's Firebase Auth UID. The account is created by scripts/setup-admin.mjs (run from the deploy
+ * workflow) from the ADMIN_EMAIL / ADMIN_PASSWORD GitHub secrets. Must match `isAdmin()` in firestore.rules.
  */
-export const ADMIN_UID = 'REPLACE_WITH_ADMIN_UID'
+export const ADMIN_UID = 'gamble-dice-admin'

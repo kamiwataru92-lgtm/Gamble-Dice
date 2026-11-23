@@ -40,8 +40,8 @@
 
 `https://<プロジェクトID>.web.app/admin` で、メールアドレスとパスワードでログインします。プレイヤーのコインを増減したり、アイテムを配ったりできます。
 
-- 管理者アカウントは Firebase コンソールの Authentication（メール / パスワード）で作る
-- そのアカウントの UID を `src/admin/config.ts` の `ADMIN_UID` と、`firestore.rules` の `isAdmin()` の 2 か所に書く
+- 管理者アカウントは GitHub だけで作れます。リポジトリの Settings → Secrets and variables → Actions に `ADMIN_EMAIL`（メールアドレス）と `ADMIN_PASSWORD`（8 文字以上）を登録し、公開（Actions の「Deploy to Firebase」）を実行すると、作成または更新されます
+- パスワードを変えるときは `ADMIN_PASSWORD` を書き換えて、もう一度公開を実行します
 - 管理者以外は、画面からもデータベースからも、他人のコインやアイテムを変更できない
 
 ## 公開する手順
