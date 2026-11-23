@@ -1,0 +1,36 @@
+name: Reset players
+
+# Manual only: Actions → "Reset players" → Run workflow, and type "reset" to confirm.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "reset" to set every coins to 1000 and clear gacha items and icons'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    if: inputs.confirm == 'reset'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save firebase-admin@12.7.0
+      - name: Write service account key
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set"; exit 1; fi
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+      - name: Reset players
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: node scripts/reset-players.mjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
